@@ -7,16 +7,30 @@ import { DashboardFilters } from '../components/DashboardFilters';
 import { TrendChart } from '../components/TrendChart';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Settings, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Index = () => {
   const [salesData, setSalesData] = useState(null);
+  const [targets, setTargets] = useState({
+    monthlySales: 3200000,
+    monthlyGP: 800000,
+    ytdSales: 15000000,
+    ytdGP: 3500000
+  });
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [viewMode, setViewMode] = useState('monthly'); // 'monthly' or 'ytd'
   const [filters, setFilters] = useState({
     productGroup: 'all',
     customerName: 'all',
     salesperson: 'all'
   });
+
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
 
   // Sample data structure - replace with actual MS Dynamics 365 API call
   const sampleData = {
@@ -26,10 +40,7 @@ const Index = () => {
       totalOrders: 156,
       averageMargin: 22.0
     },
-    targets: {
-      monthlySales: 3200000,
-      monthlyGP: 800000
-    },
+    targets: targets,
     marginBands: [
       { band: '<10%', orders: 23, value: 456000, percentage: 16.0 },
       { band: '10-20%', orders: 67, value: 1824000, percentage: 64.0 },
@@ -45,16 +56,31 @@ const Index = () => {
   };
 
   useEffect(() => {
+    // Load targets from localStorage
+    const savedTargets = localStorage.getItem('salesTargets');
+    if (savedTargets) {
+      const parsedTargets = JSON.parse(savedTargets);
+      setTargets(parsedTargets);
+    }
+  }, []);
+
+  useEffect(() => {
     // Simulate API call to MS Dynamics 365
     const fetchSalesData = async () => {
       try {
         // Replace with actual API endpoint
         // const response = await fetch('/api/dynamics365/sales-data');
         // const data = await response.json();
-        setSalesData(sampleData);
+        setSalesData({
+          ...sampleData,
+          targets: targets
+        });
       } catch (error) {
         console.error('Error fetching sales data:', error);
-        setSalesData(sampleData); // Fallback to sample data
+        setSalesData({
+          ...sampleData,
+          targets: targets
+        }); // Fallback to sample data
       }
     };
 
@@ -63,7 +89,7 @@ const Index = () => {
     // Set up real-time updates every 5 minutes
     const interval = setInterval(fetchSalesData, 300000);
     return () => clearInterval(interval);
-  }, [filters]);
+  }, [filters, targets]);
 
   if (!salesData) {
     return (
@@ -76,8 +102,12 @@ const Index = () => {
     );
   }
 
-  const gapToSalesTarget = salesData.targets.monthlySales - salesData.currentMonth.totalSales;
-  const gapToGPTarget = salesData.targets.monthlyGP - salesData.currentMonth.totalGP;
+  const currentTargets = viewMode === 'monthly' ? 
+    { sales: targets.monthlySales, gp: targets.monthlyGP } :
+    { sales: targets.ytdSales, gp: targets.ytdGP };
+
+  const gapToSalesTarget = currentTargets.sales - salesData.currentMonth.totalSales;
+  const gapToGPTarget = currentTargets.gp - salesData.currentMonth.totalGP;
   const requiredAverageMargin = gapToSalesTarget > 0 ? (gapToGPTarget / gapToSalesTarget) * 100 : 0;
 
   return (
@@ -88,7 +118,7 @@ const Index = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <img 
-                src="/placeholder.svg" 
+                src="/lovable-uploads/0d7b586d-cda7-430d-a86d-3e56c1d9d1a2.png" 
                 alt="CiG BluSolutions Logo" 
                 className="h-12 w-auto"
               />
@@ -123,13 +153,49 @@ const Index = () => {
 
       {/* Main Dashboard */}
       <div className="container mx-auto px-6 py-6 space-y-6">
+        {/* Month/YTD Selector */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <h2 className="text-2xl font-bold text-foreground">
+                  {viewMode === 'monthly' ? `${months[selectedMonth]} 2025` : 'Year-to-Date 2025'}
+                </h2>
+                <div className="flex items-center gap-2">
+                  <Select value={viewMode} onValueChange={setViewMode}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="ytd">YTD</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {viewMode === 'monthly' && (
+                    <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(parseInt(value))}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {months.map((month, index) => (
+                          <SelectItem key={index} value={index.toString()}>{month}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Filters */}
         <DashboardFilters filters={filters} onFilterChange={setFilters} />
 
         {/* KPI Summary */}
         <KPISummary 
           data={salesData.currentMonth}
-          targets={salesData.targets}
+          targets={currentTargets}
           gapToSalesTarget={gapToSalesTarget}
           gapToGPTarget={gapToGPTarget}
           requiredAverageMargin={requiredAverageMargin}
@@ -140,9 +206,9 @@ const Index = () => {
           {/* Target vs Actual */}
           <TargetActualChart 
             salesActual={salesData.currentMonth.totalSales}
-            salesTarget={salesData.targets.monthlySales}
+            salesTarget={currentTargets.sales}
             gpActual={salesData.currentMonth.totalGP}
-            gpTarget={salesData.targets.monthlyGP}
+            gpTarget={currentTargets.gp}
           />
 
           {/* Margin Band Analysis */}
@@ -164,18 +230,18 @@ const Index = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-4 bg-muted/50 rounded-lg">
                 <h4 className="font-semibold text-sm mb-2 text-foreground">Sales Gap</h4>
-                <p className="text-lg font-bold text-primary">฿{gapToSalesTarget.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">Remaining to reach monthly target</p>
+                <p className="text-lg font-bold text-primary">฿{Math.max(gapToSalesTarget, 0).toLocaleString()}</p>
+                <p className="text-xs text-foreground/70">Remaining to reach {viewMode} target</p>
               </div>
               <div className="p-4 bg-muted/50 rounded-lg">
                 <h4 className="font-semibold text-sm mb-2 text-foreground">GP Gap</h4>
-                <p className="text-lg font-bold text-destructive">฿{gapToGPTarget.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">Remaining to reach GP target</p>
+                <p className="text-lg font-bold text-destructive">฿{Math.max(gapToGPTarget, 0).toLocaleString()}</p>
+                <p className="text-xs text-foreground/70">Remaining to reach GP target</p>
               </div>
               <div className="p-4 bg-muted/50 rounded-lg">
                 <h4 className="font-semibold text-sm mb-2 text-foreground">Required Avg Margin</h4>
                 <p className="text-lg font-bold text-orange-600">{requiredAverageMargin.toFixed(1)}%</p>
-                <p className="text-xs text-muted-foreground">For remaining orders to hit target</p>
+                <p className="text-xs text-foreground/70">For remaining orders to hit target</p>
               </div>
             </div>
           </CardContent>

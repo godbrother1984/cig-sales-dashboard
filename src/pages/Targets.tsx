@@ -1,19 +1,30 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { ArrowLeft, Save } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useToast } from '../hooks/use-toast';
 
 const Targets = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [targets, setTargets] = useState({
     monthlySales: 3200000,
     monthlyGP: 800000,
     ytdSales: 15000000,
     ytdGP: 3500000
   });
+
+  useEffect(() => {
+    // Load existing targets from localStorage
+    const savedTargets = localStorage.getItem('salesTargets');
+    if (savedTargets) {
+      setTargets(JSON.parse(savedTargets));
+    }
+  }, []);
 
   const handleInputChange = (field: string, value: string) => {
     setTargets(prev => ({
@@ -23,9 +34,17 @@ const Targets = () => {
   };
 
   const handleSave = () => {
-    // Save targets to localStorage or API
+    // Save targets to localStorage
     localStorage.setItem('salesTargets', JSON.stringify(targets));
-    alert('Targets saved successfully!');
+    toast({
+      title: "Targets Saved",
+      description: "Sales and GP targets have been updated successfully.",
+    });
+    
+    // Navigate back to dashboard to see updated targets
+    setTimeout(() => {
+      navigate('/');
+    }, 1000);
   };
 
   return (

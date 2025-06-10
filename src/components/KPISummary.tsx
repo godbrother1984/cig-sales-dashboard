@@ -11,8 +11,8 @@ interface KPISummaryProps {
     averageMargin: number;
   };
   targets: {
-    monthlySales: number;
-    monthlyGP: number;
+    sales: number;
+    gp: number;
   };
   gapToSalesTarget: number;
   gapToGPTarget: number;
@@ -26,8 +26,8 @@ export const KPISummary: React.FC<KPISummaryProps> = ({
   gapToGPTarget,
   requiredAverageMargin
 }) => {
-  const salesPercentage = (data.totalSales / targets.monthlySales) * 100;
-  const gpPercentage = (data.totalGP / targets.monthlyGP) * 100;
+  const salesPercentage = (data.totalSales / targets.sales) * 100;
+  const gpPercentage = (data.totalGP / targets.gp) * 100;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -45,8 +45,8 @@ export const KPISummary: React.FC<KPISummaryProps> = ({
               {salesPercentage.toFixed(1)}% of target
             </div>
           </div>
-          <div className="text-xs text-muted-foreground mt-1">
-            Target: ฿{targets.monthlySales.toLocaleString()}
+          <div className="text-xs text-foreground/70 mt-1">
+            Target: ฿{targets.sales.toLocaleString()}
           </div>
         </CardContent>
       </Card>
@@ -65,8 +65,8 @@ export const KPISummary: React.FC<KPISummaryProps> = ({
               {gpPercentage.toFixed(1)}% of target
             </div>
           </div>
-          <div className="text-xs text-muted-foreground mt-1">
-            Target: ฿{targets.monthlyGP.toLocaleString()}
+          <div className="text-xs text-foreground/70 mt-1">
+            Target: ฿{targets.gp.toLocaleString()}
           </div>
         </CardContent>
       </Card>
@@ -80,11 +80,11 @@ export const KPISummary: React.FC<KPISummaryProps> = ({
         <CardContent>
           <div className="text-2xl font-bold">{data.totalOrders}</div>
           <div className="flex items-center pt-1">
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-foreground/70">
               Avg: ฿{(data.totalSales / data.totalOrders).toLocaleString()} per order
             </div>
           </div>
-          <div className="text-xs text-muted-foreground mt-1">
+          <div className="text-xs text-foreground/70 mt-1">
             Avg Margin: {data.averageMargin.toFixed(1)}%
           </div>
         </CardContent>
@@ -101,11 +101,11 @@ export const KPISummary: React.FC<KPISummaryProps> = ({
             ฿{Math.max(gapToSalesTarget, 0).toLocaleString()}
           </div>
           <div className="flex items-center pt-1">
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-foreground/70">
               GP Gap: ฿{Math.max(gapToGPTarget, 0).toLocaleString()}
             </div>
           </div>
-          <div className="text-xs text-muted-foreground mt-1">
+          <div className="text-xs text-foreground/70 mt-1">
             Need {requiredAverageMargin.toFixed(1)}% avg margin
           </div>
         </CardContent>
