@@ -11,6 +11,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Settings, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+interface ManualOrder {
+  id: string;
+  orderDate: string;
+  customerName: string;
+  productGroup: 'HBPM' | 'M&E';
+  orderValue: number;
+  grossMargin: number;
+  grossProfit: number;
+  salesperson: string;
+}
+
 const Index = () => {
   const [salesData, setSalesData] = useState(null);
   const [targets, setTargets] = useState({
@@ -33,14 +44,13 @@ const Index = () => {
   ];
 
   // Sample data structure - replace with actual MS Dynamics 365 API call
-  const sampleData = {
+  const sampleDynamicsData = {
     currentMonth: {
       totalSales: 2850000,
       totalGP: 627000,
       totalOrders: 156,
       averageMargin: 22.0
     },
-    targets: targets,
     marginBands: [
       { band: '<10%', orders: 23, value: 456000, percentage: 16.0 },
       { band: '10-20%', orders: 67, value: 1824000, percentage: 64.0 },
@@ -55,6 +65,75 @@ const Index = () => {
     ]
   };
 
+  const loadManualOrders = (): ManualOrder[] => {
+    const savedOrders = localStorage.getItem('manualOrders');
+    return savedOrders ? JSON.parse(savedOrders) : [];
+  };
+
+  const filterManualOrders = (orders: ManualOrder[], currentFilters: typeof filters) => {
+    return orders.filter(order => {
+      const productGroupMatch = currentFilters.productGroup === 'all' || 
+        order.productGroup === currentFilters.productGroup;
+      const customerMatch = currentFilters.customerName === 'all' || 
+        order.customerName === currentFilters.customerName;
+      const salespersonMatch = currentFilters.salesperson === 'all' || 
+        order.salesperson === currentFilters.salesperson;
+      
+      return productGroupMatch && customerMatch && salespersonMatch;
+    });
+  };
+
+  const combineDataWithManualOrders = (dynamicsData: any, manualOrders: ManualOrder[]) => {
+    // Filter manual orders based on current filters
+    const filteredManualOrders = filterManualOrders(manualOrders, filters);
+    
+    // Calculate totals from manual orders
+    const manualTotalSales = filteredManualOrders.reduce((sum, order) => sum + order.orderValue, 0);
+    const manualTotalGP = filteredManualOrders.reduce((sum, order) => sum + order.grossProfit, 0);
+    const manualOrderCount = filteredManualOrders.length;
+
+    // Combine with dynamics data
+    const combinedTotalSales = dynamicsData.currentMonth.totalSales + manualTotalSales;
+    const combinedTotalGP = dynamicsData.currentMonth.totalGP + manualTotalGP;
+    const combinedTotalOrders = dynamicsData.currentMonth.totalOrders + manualOrderCount;
+    const combinedAverageMargin = combinedTotalSales > 0 ? (combinedTotalGP / combinedTotalSales) * 100 : 0;
+
+    // Update margin bands to include manual orders
+    const updatedMarginBands = [...dynamicsData.marginBands];
+    
+    filteredManualOrders.forEach(order => {
+      let bandIndex;
+      if (order.grossMargin < 10) {
+        bandIndex = 0; // '<10%'
+      } else if (order.grossMargin <= 20) {
+        bandIndex = 1; // '10-20%'
+      } else {
+        bandIndex = 2; // '>20%'
+      }
+      
+      updatedMarginBands[bandIndex].orders += 1;
+      updatedMarginBands[bandIndex].value += order.orderValue;
+    });
+
+    // Recalculate percentages for margin bands
+    const totalMarginBandValue = updatedMarginBands.reduce((sum, band) => sum + band.value, 0);
+    updatedMarginBands.forEach(band => {
+      band.percentage = totalMarginBandValue > 0 ? (band.value / totalMarginBandValue) * 100 : 0;
+    });
+
+    return {
+      currentMonth: {
+        totalSales: combinedTotalSales,
+        totalGP: combinedTotalGP,
+        totalOrders: combinedTotalOrders,
+        averageMargin: combinedAverageMargin
+      },
+      targets: targets,
+      marginBands: updatedMarginBands,
+      monthlyTrend: dynamicsData.monthlyTrend // Keep original trend for now
+    };
+  };
+
   useEffect(() => {
     // Load targets from localStorage
     const savedTargets = localStorage.getItem('salesTargets');
@@ -65,22 +144,26 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
-    // Simulate API call to MS Dynamics 365
+    // Simulate API call to MS Dynamics 365 and combine with manual orders
     const fetchSalesData = async () => {
       try {
         // Replace with actual API endpoint
         // const response = await fetch('/api/dynamics365/sales-data');
-        // const data = await response.json();
-        setSalesData({
-          ...sampleData,
-          targets: targets
-        });
+        // const dynamicsData = await response.json();
+        
+        // Load manual orders
+        const manualOrders = loadManualOrders();
+        
+        // Combine dynamics data with manual orders
+        const combinedData = combineDataWithManualOrders(sampleDynamicsData, manualOrders);
+        
+        setSalesData(combinedData);
       } catch (error) {
         console.error('Error fetching sales data:', error);
-        setSalesData({
-          ...sampleData,
-          targets: targets
-        }); // Fallback to sample data
+        // Fallback: still combine with manual orders
+        const manualOrders = loadManualOrders();
+        const combinedData = combineDataWithManualOrders(sampleDynamicsData, manualOrders);
+        setSalesData(combinedData);
       }
     };
 
@@ -90,6 +173,21 @@ const Index = () => {
     const interval = setInterval(fetchSalesData, 300000);
     return () => clearInterval(interval);
   }, [filters, targets]);
+
+  // Add event listener for storage changes (when manual orders are added/removed)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'manualOrders') {
+        // Reload data when manual orders change
+        const manualOrders = loadManualOrders();
+        const combinedData = combineDataWithManualOrders(sampleDynamicsData, manualOrders);
+        setSalesData(combinedData);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [filters]);
 
   if (!salesData) {
     return (
@@ -124,13 +222,13 @@ const Index = () => {
               />
               <div>
                 <h1 className="text-3xl font-bold text-foreground">Sales Performance Dashboard</h1>
-                <p className="text-muted-foreground">Real-time tracking from MS Dynamics 365</p>
+                <p className="text-foreground/70">Real-time tracking from MS Dynamics 365</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">Last updated</p>
-                <p className="text-sm font-medium">{new Date().toLocaleString()}</p>
+                <p className="text-sm text-foreground/70">Last updated</p>
+                <p className="text-sm font-medium text-foreground">{new Date().toLocaleString()}</p>
               </div>
               <div className="flex gap-2">
                 <Link to="/targets">
