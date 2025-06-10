@@ -6,6 +6,9 @@ import { MarginBandChart } from '../components/MarginBandChart';
 import { DashboardFilters } from '../components/DashboardFilters';
 import { TrendChart } from '../components/TrendChart';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Settings, Plus } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Index = () => {
   const [salesData, setSalesData] = useState(null);
@@ -83,13 +86,36 @@ const Index = () => {
       <div className="bg-card border-b border-border">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Sales Performance Dashboard</h1>
-              <p className="text-muted-foreground">Real-time tracking from MS Dynamics 365</p>
+            <div className="flex items-center gap-4">
+              <img 
+                src="/placeholder.svg" 
+                alt="CiG BluSolutions Logo" 
+                className="h-12 w-auto"
+              />
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Sales Performance Dashboard</h1>
+                <p className="text-muted-foreground">Real-time tracking from MS Dynamics 365</p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">Last updated</p>
-              <p className="text-sm font-medium">{new Date().toLocaleString()}</p>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Last updated</p>
+                <p className="text-sm font-medium">{new Date().toLocaleString()}</p>
+              </div>
+              <div className="flex gap-2">
+                <Link to="/targets">
+                  <Button variant="outline" size="sm">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Targets
+                  </Button>
+                </Link>
+                <Link to="/manual-entry">
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Manual Entry
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -137,18 +163,18 @@ const Index = () => {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-4 bg-muted/50 rounded-lg">
-                <h4 className="font-semibold text-sm mb-2">Sales Gap</h4>
+                <h4 className="font-semibold text-sm mb-2 text-foreground">Sales Gap</h4>
                 <p className="text-lg font-bold text-primary">฿{gapToSalesTarget.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground">Remaining to reach monthly target</p>
               </div>
               <div className="p-4 bg-muted/50 rounded-lg">
-                <h4 className="font-semibold text-sm mb-2">GP Gap</h4>
-                <p className="text-lg font-bold text-secondary">฿{gapToGPTarget.toLocaleString()}</p>
+                <h4 className="font-semibold text-sm mb-2 text-foreground">GP Gap</h4>
+                <p className="text-lg font-bold text-destructive">฿{gapToGPTarget.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground">Remaining to reach GP target</p>
               </div>
               <div className="p-4 bg-muted/50 rounded-lg">
-                <h4 className="font-semibold text-sm mb-2">Required Avg Margin</h4>
-                <p className="text-lg font-bold text-accent">{requiredAverageMargin.toFixed(1)}%</p>
+                <h4 className="font-semibold text-sm mb-2 text-foreground">Required Avg Margin</h4>
+                <p className="text-lg font-bold text-orange-600">{requiredAverageMargin.toFixed(1)}%</p>
                 <p className="text-xs text-muted-foreground">For remaining orders to hit target</p>
               </div>
             </div>

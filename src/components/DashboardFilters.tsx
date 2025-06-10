@@ -14,7 +14,7 @@ interface DashboardFiltersProps {
 }
 
 export const DashboardFilters: React.FC<DashboardFiltersProps> = ({ filters, onFilterChange }) => {
-  const productGroups = ['All', 'Electronics', 'Automotive', 'Industrial', 'Consumer Goods'];
+  const productGroups = ['All', 'CTPL', 'OEM', 'Replacement', 'Units', 'HBPM', 'M&E', 'Others'];
   const customers = ['All', 'Customer A', 'Customer B', 'Customer C', 'Customer D'];
   const salespeople = ['All', 'John Smith', 'Sarah Johnson', 'Mike Chen', 'Lisa Wong'];
 
