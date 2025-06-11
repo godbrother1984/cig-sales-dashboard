@@ -1,20 +1,13 @@
-
 import React from 'react';
 import { Button } from './ui/button';
 import { Settings, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
 export const DashboardHeader = () => {
-  return (
-    <div className="bg-card border-b border-border">
+  return <div className="bg-card border-b border-border">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <img 
-              src="/lovable-uploads/87fa2ce9-4efe-496b-8ad4-26e97592b6e0.png" 
-              alt="CiG BluSolutions Logo" 
-              className="h-12 w-auto"
-            />
+            <img alt="CiG BluSolutions Logo" src="/lovable-uploads/d0097b84-8a8b-4286-8394-0bf1881e2648.png" className="h-12 w-auto object-fill" />
             <div>
               <h1 className="text-3xl font-bold text-foreground">Sales Performance Dashboard</h1>
               <p className="text-foreground/70">Real-time tracking from MS Dynamics 365</p>
@@ -42,6 +35,5 @@ export const DashboardHeader = () => {
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
