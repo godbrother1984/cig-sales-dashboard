@@ -12,93 +12,83 @@ export const getQuarterMonths = (month: number) => {
   return { start: bounds.start, end: Math.min(bounds.end, month) };
 };
 
+const getCurrentMonth = () => new Date().getMonth();
+
+const generateMonthData = (monthIndex: number): MonthlyData => {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  // Base values with some variation per month
+  const baseValues = [
+    { sales: 2900000, gp: 725000, orders: 145 },
+    { sales: 3100000, gp: 806000, orders: 156 },
+    { sales: 2750000, gp: 577500, orders: 138 },
+    { sales: 3350000, gp: 871000, orders: 168 },
+    { sales: 2850000, gp: 627000, orders: 156 },
+    { sales: 3200000, gp: 800000, orders: 160 },
+    { sales: 3100000, gp: 775000, orders: 155 },
+    { sales: 2950000, gp: 737500, orders: 148 },
+    { sales: 3400000, gp: 850000, orders: 170 },
+    { sales: 3250000, gp: 812500, orders: 163 },
+    { sales: 3150000, gp: 787500, orders: 158 },
+    { sales: 3300000, gp: 825000, orders: 165 }
+  ];
+
+  const monthData = baseValues[monthIndex];
+  
+  return {
+    month: months[monthIndex],
+    sales: monthData.sales,
+    gp: monthData.gp,
+    totalOrders: monthData.orders,
+    salespeople: {
+      'John Smith': { 
+        sales: Math.round(monthData.sales * 0.41), 
+        gp: Math.round(monthData.gp * 0.41), 
+        orders: Math.round(monthData.orders * 0.4) 
+      },
+      'Sarah Johnson': { 
+        sales: Math.round(monthData.sales * 0.34), 
+        gp: Math.round(monthData.gp * 0.34), 
+        orders: Math.round(monthData.orders * 0.33) 
+      },
+      'Mike Chen': { 
+        sales: Math.round(monthData.sales * 0.25), 
+        gp: Math.round(monthData.gp * 0.25), 
+        orders: Math.round(monthData.orders * 0.27) 
+      }
+    },
+    customers: {
+      'Toyota Motor Thailand': { 
+        sales: Math.round(monthData.sales * 0.5), 
+        gp: Math.round(monthData.gp * 0.5), 
+        orders: Math.round(monthData.orders * 0.5) 
+      },
+      'Honda Automobile Thailand': { 
+        sales: Math.round(monthData.sales * 0.3), 
+        gp: Math.round(monthData.gp * 0.3), 
+        orders: Math.round(monthData.orders * 0.29) 
+      },
+      'Isuzu Motors': { 
+        sales: Math.round(monthData.sales * 0.2), 
+        gp: Math.round(monthData.gp * 0.2), 
+        orders: Math.round(monthData.orders * 0.21) 
+      }
+    }
+  };
+};
+
 export const getSampleDynamicsData = (): { 
   currentMonth: SalesData; 
   marginBands: MarginBand[]; 
   monthlyTrend: MonthlyData[] 
 } => {
-  const monthlyData: MonthlyData[] = [
-    { 
-      month: 'Jan',
-      sales: 2900000, 
-      gp: 725000, 
-      totalOrders: 145,
-      salespeople: {
-        'John Smith': { sales: 1200000, gp: 300000, orders: 58 },
-        'Sarah Johnson': { sales: 980000, gp: 245000, orders: 47 },
-        'Mike Chen': { sales: 720000, gp: 180000, orders: 40 }
-      },
-      customers: {
-        'Toyota Motor Thailand': { sales: 1450000, gp: 362500, orders: 72 },
-        'Honda Automobile Thailand': { sales: 870000, gp: 217500, orders: 43 },
-        'Isuzu Motors': { sales: 580000, gp: 145000, orders: 30 }
-      }
-    },
-    { 
-      month: 'Feb',
-      sales: 3100000, 
-      gp: 806000, 
-      totalOrders: 156,
-      salespeople: {
-        'John Smith': { sales: 1300000, gp: 338000, orders: 62 },
-        'Sarah Johnson': { sales: 1050000, gp: 273000, orders: 52 },
-        'Mike Chen': { sales: 750000, gp: 195000, orders: 42 }
-      },
-      customers: {
-        'Toyota Motor Thailand': { sales: 1550000, gp: 403000, orders: 78 },
-        'Honda Automobile Thailand': { sales: 930000, gp: 242000, orders: 46 },
-        'Isuzu Motors': { sales: 620000, gp: 161000, orders: 32 }
-      }
-    },
-    { 
-      month: 'Mar',
-      sales: 2750000, 
-      gp: 577500, 
-      totalOrders: 138,
-      salespeople: {
-        'John Smith': { sales: 1150000, gp: 241500, orders: 55 },
-        'Sarah Johnson': { sales: 935000, gp: 196350, orders: 47 },
-        'Mike Chen': { sales: 665000, gp: 139650, orders: 36 }
-      },
-      customers: {
-        'Toyota Motor Thailand': { sales: 1375000, gp: 288750, orders: 69 },
-        'Honda Automobile Thailand': { sales: 825000, gp: 173250, orders: 41 },
-        'Isuzu Motors': { sales: 550000, gp: 115500, orders: 28 }
-      }
-    },
-    { 
-      month: 'Apr',
-      sales: 3350000, 
-      gp: 871000, 
-      totalOrders: 168,
-      salespeople: {
-        'John Smith': { sales: 1407500, gp: 365950, orders: 67 },
-        'Sarah Johnson': { sales: 1140000, gp: 296400, orders: 57 },
-        'Mike Chen': { sales: 802500, gp: 208650, orders: 44 }
-      },
-      customers: {
-        'Toyota Motor Thailand': { sales: 1675000, gp: 435500, orders: 84 },
-        'Honda Automobile Thailand': { sales: 1005000, gp: 261300, orders: 50 },
-        'Isuzu Motors': { sales: 670000, gp: 174200, orders: 34 }
-      }
-    },
-    { 
-      month: 'May',
-      sales: 2850000, 
-      gp: 627000, 
-      totalOrders: 156,
-      salespeople: {
-        'John Smith': { sales: 1197000, gp: 263340, orders: 62 },
-        'Sarah Johnson': { sales: 969000, gp: 213180, orders: 52 },
-        'Mike Chen': { sales: 684000, gp: 150480, orders: 42 }
-      },
-      customers: {
-        'Toyota Motor Thailand': { sales: 1425000, gp: 313500, orders: 78 },
-        'Honda Automobile Thailand': { sales: 855000, gp: 188100, orders: 46 },
-        'Isuzu Motors': { sales: 570000, gp: 125400, orders: 32 }
-      }
-    }
-  ];
+  const currentMonth = getCurrentMonth();
+  const monthlyData: MonthlyData[] = [];
+  
+  // Generate data for all months up to and including current month
+  for (let i = 0; i <= currentMonth; i++) {
+    monthlyData.push(generateMonthData(i));
+  }
 
   return {
     currentMonth: {
