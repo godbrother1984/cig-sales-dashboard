@@ -14,9 +14,9 @@ interface DashboardFiltersProps {
 }
 
 export const DashboardFilters: React.FC<DashboardFiltersProps> = ({ filters, onFilterChange }) => {
-  const productGroups = ['All', 'CTPL', 'OEM', 'Replacement', 'Units', 'HBPM', 'M&E', 'Others'];
-  const customers = ['All', 'Customer A', 'Customer B', 'Customer C', 'Customer D'];
-  const salespeople = ['All', 'John Smith', 'Sarah Johnson', 'Mike Chen', 'Lisa Wong'];
+  const productGroups = ['All', 'HBPM', 'M&E', 'CTPL', 'OEM', 'Replacement', 'Units', 'Others'];
+  const customers = ['All', 'Toyota Motor Thailand', 'Honda Automobile Thailand', 'Isuzu Motors'];
+  const salespeople = ['All', 'John Smith', 'Sarah Johnson', 'Mike Chen'];
 
   const handleFilterChange = (filterType: string, value: string) => {
     onFilterChange({
@@ -57,7 +57,7 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({ filters, onF
               value={filters.customerName === 'all' ? 'All' : filters.customerName} 
               onValueChange={(value) => handleFilterChange('customerName', value)}
             >
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

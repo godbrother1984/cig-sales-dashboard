@@ -43,26 +43,156 @@ const Index = () => {
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  // Sample data structure - replace with actual MS Dynamics 365 API call
-  const sampleDynamicsData = {
-    currentMonth: {
-      totalSales: 2850000,
-      totalGP: 627000,
-      totalOrders: 156,
-      averageMargin: 22.0
-    },
-    marginBands: [
-      { band: '<10%', orders: 23, value: 456000, percentage: 16.0 },
-      { band: '10-20%', orders: 67, value: 1824000, percentage: 64.0 },
-      { band: '>20%', orders: 66, value: 570000, percentage: 20.0 }
-    ],
-    monthlyTrend: [
-      { month: 'Jan', sales: 2900000, gp: 725000 },
-      { month: 'Feb', sales: 3100000, gp: 806000 },
-      { month: 'Mar', sales: 2750000, gp: 577500 },
-      { month: 'Apr', sales: 3350000, gp: 871000 },
-      { month: 'May', sales: 2850000, gp: 627000 }
-    ]
+  // Enhanced sample data structure with month-specific data and salesperson information
+  const getSampleDynamicsData = () => {
+    const monthlyData = [
+      { 
+        month: 0, // January
+        name: 'Jan',
+        totalSales: 2900000, 
+        totalGP: 725000, 
+        totalOrders: 145,
+        salespeople: {
+          'John Smith': { sales: 1200000, gp: 300000, orders: 58 },
+          'Sarah Johnson': { sales: 980000, gp: 245000, orders: 47 },
+          'Mike Chen': { sales: 720000, gp: 180000, orders: 40 }
+        },
+        customers: {
+          'Toyota Motor Thailand': { sales: 1450000, gp: 362500, orders: 72 },
+          'Honda Automobile Thailand': { sales: 870000, gp: 217500, orders: 43 },
+          'Isuzu Motors': { sales: 580000, gp: 145000, orders: 30 }
+        }
+      },
+      { 
+        month: 1, // February
+        name: 'Feb',
+        totalSales: 3100000, 
+        totalGP: 806000, 
+        totalOrders: 156,
+        salespeople: {
+          'John Smith': { sales: 1300000, gp: 338000, orders: 62 },
+          'Sarah Johnson': { sales: 1050000, gp: 273000, orders: 52 },
+          'Mike Chen': { sales: 750000, gp: 195000, orders: 42 }
+        },
+        customers: {
+          'Toyota Motor Thailand': { sales: 1550000, gp: 403000, orders: 78 },
+          'Honda Automobile Thailand': { sales: 930000, gp: 242000, orders: 46 },
+          'Isuzu Motors': { sales: 620000, gp: 161000, orders: 32 }
+        }
+      },
+      { 
+        month: 2, // March
+        name: 'Mar',
+        totalSales: 2750000, 
+        totalGP: 577500, 
+        totalOrders: 138,
+        salespeople: {
+          'John Smith': { sales: 1150000, gp: 241500, orders: 55 },
+          'Sarah Johnson': { sales: 935000, gp: 196350, orders: 47 },
+          'Mike Chen': { sales: 665000, gp: 139650, orders: 36 }
+        },
+        customers: {
+          'Toyota Motor Thailand': { sales: 1375000, gp: 288750, orders: 69 },
+          'Honda Automobile Thailand': { sales: 825000, gp: 173250, orders: 41 },
+          'Isuzu Motors': { sales: 550000, gp: 115500, orders: 28 }
+        }
+      },
+      { 
+        month: 3, // April
+        name: 'Apr',
+        totalSales: 3350000, 
+        totalGP: 871000, 
+        totalOrders: 168,
+        salespeople: {
+          'John Smith': { sales: 1407500, gp: 365950, orders: 67 },
+          'Sarah Johnson': { sales: 1140000, gp: 296400, orders: 57 },
+          'Mike Chen': { sales: 802500, gp: 208650, orders: 44 }
+        },
+        customers: {
+          'Toyota Motor Thailand': { sales: 1675000, gp: 435500, orders: 84 },
+          'Honda Automobile Thailand': { sales: 1005000, gp: 261300, orders: 50 },
+          'Isuzu Motors': { sales: 670000, gp: 174200, orders: 34 }
+        }
+      },
+      { 
+        month: 4, // May
+        name: 'May',
+        totalSales: 2850000, 
+        totalGP: 627000, 
+        totalOrders: 156,
+        salespeople: {
+          'John Smith': { sales: 1197000, gp: 263340, orders: 62 },
+          'Sarah Johnson': { sales: 969000, gp: 213180, orders: 52 },
+          'Mike Chen': { sales: 684000, gp: 150480, orders: 42 }
+        },
+        customers: {
+          'Toyota Motor Thailand': { sales: 1425000, gp: 313500, orders: 78 },
+          'Honda Automobile Thailand': { sales: 855000, gp: 188100, orders: 46 },
+          'Isuzu Motors': { sales: 570000, gp: 125400, orders: 32 }
+        }
+      }
+    ];
+
+    const currentMonthIndex = viewMode === 'monthly' ? selectedMonth : 4; // May for current data
+    const currentMonthData = monthlyData[Math.min(currentMonthIndex, monthlyData.length - 1)];
+
+    // Calculate YTD data if in YTD mode
+    let displayData;
+    if (viewMode === 'ytd') {
+      const ytdData = monthlyData.slice(0, selectedMonth + 1).reduce((acc, month) => {
+        acc.totalSales += month.totalSales;
+        acc.totalGP += month.totalGP;
+        acc.totalOrders += month.totalOrders;
+        return acc;
+      }, { totalSales: 0, totalGP: 0, totalOrders: 0 });
+      
+      displayData = {
+        ...ytdData,
+        averageMargin: ytdData.totalSales > 0 ? (ytdData.totalGP / ytdData.totalSales) * 100 : 0
+      };
+    } else {
+      displayData = {
+        totalSales: currentMonthData.totalSales,
+        totalGP: currentMonthData.totalGP,
+        totalOrders: currentMonthData.totalOrders,
+        averageMargin: currentMonthData.totalSales > 0 ? (currentMonthData.totalGP / currentMonthData.totalSales) * 100 : 0
+      };
+    }
+
+    // Apply filters to the data
+    if (filters.salesperson !== 'all' && currentMonthData.salespeople[filters.salesperson]) {
+      const salespersonData = currentMonthData.salespeople[filters.salesperson];
+      if (viewMode === 'monthly') {
+        displayData = {
+          totalSales: salespersonData.sales,
+          totalGP: salespersonData.gp,
+          totalOrders: salespersonData.orders,
+          averageMargin: salespersonData.sales > 0 ? (salespersonData.gp / salespersonData.sales) * 100 : 0
+        };
+      }
+    }
+
+    if (filters.customerName !== 'all' && currentMonthData.customers[filters.customerName]) {
+      const customerData = currentMonthData.customers[filters.customerName];
+      if (viewMode === 'monthly') {
+        displayData = {
+          totalSales: customerData.sales,
+          totalGP: customerData.gp,
+          totalOrders: customerData.orders,
+          averageMargin: customerData.sales > 0 ? (customerData.gp / customerData.sales) * 100 : 0
+        };
+      }
+    }
+
+    return {
+      currentMonth: displayData,
+      marginBands: [
+        { band: '<10%', orders: 23, value: 456000, percentage: 16.0 },
+        { band: '10-20%', orders: 67, value: 1824000, percentage: 64.0 },
+        { band: '>20%', orders: 66, value: 570000, percentage: 20.0 }
+      ],
+      monthlyTrend: monthlyData.slice(0, 5) // Show Jan to May
+    };
   };
 
   const loadManualOrders = (): ManualOrder[] => {
@@ -70,8 +200,19 @@ const Index = () => {
     return savedOrders ? JSON.parse(savedOrders) : [];
   };
 
-  const filterManualOrders = (orders: ManualOrder[], currentFilters: typeof filters) => {
+  const filterManualOrders = (orders: ManualOrder[], currentFilters: typeof filters, currentMonth: number, isYTD: boolean) => {
     return orders.filter(order => {
+      const orderDate = new Date(order.orderDate);
+      const orderMonth = orderDate.getMonth();
+      
+      // Date filtering based on selected month and view mode
+      let dateMatch = false;
+      if (isYTD) {
+        dateMatch = orderMonth <= currentMonth; // YTD: from January to selected month
+      } else {
+        dateMatch = orderMonth === currentMonth; // Monthly: exact month match
+      }
+      
       const productGroupMatch = currentFilters.productGroup === 'all' || 
         order.productGroup === currentFilters.productGroup;
       const customerMatch = currentFilters.customerName === 'all' || 
@@ -79,13 +220,13 @@ const Index = () => {
       const salespersonMatch = currentFilters.salesperson === 'all' || 
         order.salesperson === currentFilters.salesperson;
       
-      return productGroupMatch && customerMatch && salespersonMatch;
+      return dateMatch && productGroupMatch && customerMatch && salespersonMatch;
     });
   };
 
   const combineDataWithManualOrders = (dynamicsData: any, manualOrders: ManualOrder[]) => {
-    // Filter manual orders based on current filters
-    const filteredManualOrders = filterManualOrders(manualOrders, filters);
+    // Filter manual orders based on current filters and selected month/YTD
+    const filteredManualOrders = filterManualOrders(manualOrders, filters, selectedMonth, viewMode === 'ytd');
     
     // Calculate totals from manual orders
     const manualTotalSales = filteredManualOrders.reduce((sum, order) => sum + order.orderValue, 0);
@@ -130,7 +271,7 @@ const Index = () => {
       },
       targets: targets,
       marginBands: updatedMarginBands,
-      monthlyTrend: dynamicsData.monthlyTrend // Keep original trend for now
+      monthlyTrend: dynamicsData.monthlyTrend
     };
   };
 
@@ -144,25 +285,25 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
-    // Simulate API call to MS Dynamics 365 and combine with manual orders
+    // Fetch sales data and combine with manual orders - now responds to month/YTD changes
     const fetchSalesData = async () => {
       try {
-        // Replace with actual API endpoint
-        // const response = await fetch('/api/dynamics365/sales-data');
-        // const dynamicsData = await response.json();
+        // Get sample dynamics data based on current month and view mode
+        const dynamicsData = getSampleDynamicsData();
         
         // Load manual orders
         const manualOrders = loadManualOrders();
         
         // Combine dynamics data with manual orders
-        const combinedData = combineDataWithManualOrders(sampleDynamicsData, manualOrders);
+        const combinedData = combineDataWithManualOrders(dynamicsData, manualOrders);
         
         setSalesData(combinedData);
       } catch (error) {
         console.error('Error fetching sales data:', error);
         // Fallback: still combine with manual orders
+        const dynamicsData = getSampleDynamicsData();
         const manualOrders = loadManualOrders();
-        const combinedData = combineDataWithManualOrders(sampleDynamicsData, manualOrders);
+        const combinedData = combineDataWithManualOrders(dynamicsData, manualOrders);
         setSalesData(combinedData);
       }
     };
@@ -172,7 +313,7 @@ const Index = () => {
     // Set up real-time updates every 5 minutes
     const interval = setInterval(fetchSalesData, 300000);
     return () => clearInterval(interval);
-  }, [filters, targets]);
+  }, [filters, targets, selectedMonth, viewMode]); // Added selectedMonth and viewMode as dependencies
 
   // Add event listener for storage changes (when manual orders are added/removed)
   useEffect(() => {
@@ -180,14 +321,15 @@ const Index = () => {
       if (e.key === 'manualOrders') {
         // Reload data when manual orders change
         const manualOrders = loadManualOrders();
-        const combinedData = combineDataWithManualOrders(sampleDynamicsData, manualOrders);
+        const dynamicsData = getSampleDynamicsData();
+        const combinedData = combineDataWithManualOrders(dynamicsData, manualOrders);
         setSalesData(combinedData);
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [filters]);
+  }, [filters, selectedMonth, viewMode]);
 
   if (!salesData) {
     return (
@@ -216,7 +358,7 @@ const Index = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <img 
-                src="/lovable-uploads/0d7b586d-cda7-430d-a86d-3e56c1d9d1a2.png" 
+                src="/lovable-uploads/f824e8a0-0b62-4bb3-9b89-50c3abc047a8.png" 
                 alt="CiG BluSolutions Logo" 
                 className="h-12 w-auto"
               />
