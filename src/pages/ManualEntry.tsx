@@ -7,6 +7,7 @@ import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useToast } from '../hooks/use-toast';
 
 interface ManualOrder {
   id: string;
@@ -20,6 +21,7 @@ interface ManualOrder {
 }
 
 const ManualEntry = () => {
+  const { toast } = useToast();
   const [orders, setOrders] = useState<ManualOrder[]>([]);
   const [currentOrder, setCurrentOrder] = useState<Partial<ManualOrder>>({
     orderDate: new Date().toISOString().split('T')[0],
@@ -39,8 +41,8 @@ const ManualEntry = () => {
       
       // Auto-calculate gross profit when order value or margin changes
       if (field === 'orderValue' || field === 'grossMargin') {
-        const orderValue = field === 'orderValue' ? Number(value) : (updated.orderValue || 0);
-        const margin = field === 'grossMargin' ? Number(value) : (updated.grossMargin || 0);
+        const orderValue = field === 'orderValue' ? Number(value) || 0 : (updated.orderValue || 0);
+        const margin = field === 'grossMargin' ? Number(value) || 0 : (updated.grossMargin || 0);
         updated.grossProfit = (orderValue * margin) / 100;
       }
       
@@ -72,9 +74,16 @@ const ManualEntry = () => {
         salesperson: ''
       });
       
-      alert('Order added successfully!');
+      toast({
+        title: "Success",
+        description: "Order added successfully!",
+      });
     } else {
-      alert('Please fill in all required fields');
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields (Customer Name, Order Value, and Salesperson)",
+        variant: "destructive",
+      });
     }
   };
 
@@ -84,6 +93,11 @@ const ManualEntry = () => {
     // Update localStorage
     const updatedOrders = orders.filter(order => order.id !== id);
     localStorage.setItem('manualOrders', JSON.stringify(updatedOrders));
+    
+    toast({
+      title: "Order Removed",
+      description: "Order has been successfully removed.",
+    });
   };
 
   // Load existing orders on component mount
@@ -131,7 +145,7 @@ const ManualEntry = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="customerName">Customer Name</Label>
+                <Label htmlFor="customerName">Customer Name *</Label>
                 <Input
                   id="customerName"
                   value={currentOrder.customerName}
@@ -157,12 +171,12 @@ const ManualEntry = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="orderValue">Order Value (THB)</Label>
+                <Label htmlFor="orderValue">Order Value (THB) *</Label>
                 <Input
                   id="orderValue"
                   type="number"
-                  value={currentOrder.orderValue}
-                  onChange={(e) => handleInputChange('orderValue', parseFloat(e.target.value))}
+                  value={currentOrder.orderValue || ''}
+                  onChange={(e) => handleInputChange('orderValue', parseFloat(e.target.value) || 0)}
                   placeholder="0"
                 />
               </div>
@@ -173,8 +187,8 @@ const ManualEntry = () => {
                   id="grossMargin"
                   type="number"
                   step="0.1"
-                  value={currentOrder.grossMargin}
-                  onChange={(e) => handleInputChange('grossMargin', parseFloat(e.target.value))}
+                  value={currentOrder.grossMargin || ''}
+                  onChange={(e) => handleInputChange('grossMargin', parseFloat(e.target.value) || 0)}
                   placeholder="0.0"
                 />
               </div>
@@ -184,14 +198,14 @@ const ManualEntry = () => {
                 <Input
                   id="grossProfit"
                   type="number"
-                  value={currentOrder.grossProfit?.toFixed(2)}
+                  value={(currentOrder.grossProfit || 0).toFixed(2)}
                   readOnly
                   className="bg-muted"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label>Salesperson</Label>
+                <Label>Salesperson *</Label>
                 <Select 
                   value={currentOrder.salesperson} 
                   onValueChange={(value) => handleInputChange('salesperson', value)}
