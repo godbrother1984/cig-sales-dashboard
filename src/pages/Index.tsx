@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { KPISummary } from '../components/KPISummary';
 import { TargetActualChart } from '../components/TargetActualChart';
@@ -43,14 +42,13 @@ const Index = () => {
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  // Enhanced sample data structure with month-specific data and salesperson information
+  // Enhanced sample data structure with correct field names for TrendChart
   const getSampleDynamicsData = () => {
     const monthlyData = [
       { 
-        month: 0, // January
-        name: 'Jan',
-        totalSales: 2900000, 
-        totalGP: 725000, 
+        month: 'Jan',
+        sales: 2900000, 
+        gp: 725000, 
         totalOrders: 145,
         salespeople: {
           'John Smith': { sales: 1200000, gp: 300000, orders: 58 },
@@ -64,10 +62,9 @@ const Index = () => {
         }
       },
       { 
-        month: 1, // February
-        name: 'Feb',
-        totalSales: 3100000, 
-        totalGP: 806000, 
+        month: 'Feb',
+        sales: 3100000, 
+        gp: 806000, 
         totalOrders: 156,
         salespeople: {
           'John Smith': { sales: 1300000, gp: 338000, orders: 62 },
@@ -81,10 +78,9 @@ const Index = () => {
         }
       },
       { 
-        month: 2, // March
-        name: 'Mar',
-        totalSales: 2750000, 
-        totalGP: 577500, 
+        month: 'Mar',
+        sales: 2750000, 
+        gp: 577500, 
         totalOrders: 138,
         salespeople: {
           'John Smith': { sales: 1150000, gp: 241500, orders: 55 },
@@ -98,10 +94,9 @@ const Index = () => {
         }
       },
       { 
-        month: 3, // April
-        name: 'Apr',
-        totalSales: 3350000, 
-        totalGP: 871000, 
+        month: 'Apr',
+        sales: 3350000, 
+        gp: 871000, 
         totalOrders: 168,
         salespeople: {
           'John Smith': { sales: 1407500, gp: 365950, orders: 67 },
@@ -115,10 +110,9 @@ const Index = () => {
         }
       },
       { 
-        month: 4, // May
-        name: 'May',
-        totalSales: 2850000, 
-        totalGP: 627000, 
+        month: 'May',
+        sales: 2850000, 
+        gp: 627000, 
         totalOrders: 156,
         salespeople: {
           'John Smith': { sales: 1197000, gp: 263340, orders: 62 },
@@ -133,15 +127,15 @@ const Index = () => {
       }
     ];
 
-    const currentMonthIndex = viewMode === 'monthly' ? selectedMonth : 4; // May for current data
-    const currentMonthData = monthlyData[Math.min(currentMonthIndex, monthlyData.length - 1)];
+    const currentMonthIndex = Math.min(selectedMonth, monthlyData.length - 1);
+    const currentMonthData = monthlyData[currentMonthIndex];
 
-    // Calculate YTD data if in YTD mode
+    // Calculate display data based on view mode and filters
     let displayData;
     if (viewMode === 'ytd') {
       const ytdData = monthlyData.slice(0, selectedMonth + 1).reduce((acc, month) => {
-        acc.totalSales += month.totalSales;
-        acc.totalGP += month.totalGP;
+        acc.totalSales += month.sales;
+        acc.totalGP += month.gp;
         acc.totalOrders += month.totalOrders;
         return acc;
       }, { totalSales: 0, totalGP: 0, totalOrders: 0 });
@@ -152,10 +146,10 @@ const Index = () => {
       };
     } else {
       displayData = {
-        totalSales: currentMonthData.totalSales,
-        totalGP: currentMonthData.totalGP,
+        totalSales: currentMonthData.sales,
+        totalGP: currentMonthData.gp,
         totalOrders: currentMonthData.totalOrders,
-        averageMargin: currentMonthData.totalSales > 0 ? (currentMonthData.totalGP / currentMonthData.totalSales) * 100 : 0
+        averageMargin: currentMonthData.sales > 0 ? (currentMonthData.gp / currentMonthData.sales) * 100 : 0
       };
     }
 
@@ -191,7 +185,7 @@ const Index = () => {
         { band: '10-20%', orders: 67, value: 1824000, percentage: 64.0 },
         { band: '>20%', orders: 66, value: 570000, percentage: 20.0 }
       ],
-      monthlyTrend: monthlyData.slice(0, 5) // Show Jan to May
+      monthlyTrend: monthlyData.slice(0, 5) // Show Jan to May with correct field names
     };
   };
 
@@ -313,9 +307,8 @@ const Index = () => {
     // Set up real-time updates every 5 minutes
     const interval = setInterval(fetchSalesData, 300000);
     return () => clearInterval(interval);
-  }, [filters, targets, selectedMonth, viewMode]); // Added selectedMonth and viewMode as dependencies
+  }, [filters, targets, selectedMonth, viewMode]);
 
-  // Add event listener for storage changes (when manual orders are added/removed)
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'manualOrders') {
@@ -358,7 +351,7 @@ const Index = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <img 
-                src="/lovable-uploads/f824e8a0-0b62-4bb3-9b89-50c3abc047a8.png" 
+                src="/lovable-uploads/87fa2ce9-4efe-496b-8ad4-26e97592b6e0.png" 
                 alt="CiG BluSolutions Logo" 
                 className="h-12 w-auto"
               />
