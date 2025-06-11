@@ -42,6 +42,8 @@ export interface MonthlyData {
 export interface Targets {
   monthlySales: number;
   monthlyGP: number;
+  quarterlySales: number;
+  quarterlyGP: number;
   ytdSales: number;
   ytdGP: number;
 }

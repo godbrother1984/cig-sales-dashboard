@@ -15,6 +15,8 @@ const Index = () => {
   const [targets, setTargets] = useState<Targets>({
     monthlySales: 3200000,
     monthlyGP: 800000,
+    quarterlySales: 9600000,
+    quarterlyGP: 2400000,
     ytdSales: 15000000,
     ytdGP: 3500000
   });
@@ -32,7 +34,13 @@ const Index = () => {
     const savedTargets = localStorage.getItem('salesTargets');
     if (savedTargets) {
       const parsedTargets = JSON.parse(savedTargets);
-      setTargets(parsedTargets);
+      // Ensure backward compatibility by setting default quarterly targets if they don't exist
+      const updatedTargets = {
+        ...parsedTargets,
+        quarterlySales: parsedTargets.quarterlySales || parsedTargets.monthlySales * 3,
+        quarterlyGP: parsedTargets.quarterlyGP || parsedTargets.monthlyGP * 3
+      };
+      setTargets(updatedTargets);
     }
   }, []);
 
@@ -47,10 +55,17 @@ const Index = () => {
     );
   }
 
-  const currentTargets = viewMode === 'monthly' ? 
-    { sales: targets.monthlySales, gp: targets.monthlyGP } :
-    { sales: targets.ytdSales, gp: targets.ytdGP };
+  const getCurrentTargets = () => {
+    if (viewMode === 'monthly') {
+      return { sales: targets.monthlySales, gp: targets.monthlyGP };
+    } else if (viewMode === 'qtd') {
+      return { sales: targets.quarterlySales, gp: targets.quarterlyGP };
+    } else {
+      return { sales: targets.ytdSales, gp: targets.ytdGP };
+    }
+  };
 
+  const currentTargets = getCurrentTargets();
   const gapToSalesTarget = currentTargets.sales - salesData.currentMonth.totalSales;
   const gapToGPTarget = currentTargets.gp - salesData.currentMonth.totalGP;
   const requiredAverageMargin = gapToSalesTarget > 0 ? (gapToGPTarget / gapToSalesTarget) * 100 : 0;

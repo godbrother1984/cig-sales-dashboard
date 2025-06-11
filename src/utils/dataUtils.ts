@@ -1,5 +1,16 @@
-
 import { MonthlyData, ManualOrder, DashboardFilters, SalesData, MarginBand, TrendData } from '../types';
+
+export const getQuarterBounds = (month: number) => {
+  if (month <= 2) return { start: 0, end: 2, quarter: 'Q1' };
+  if (month <= 5) return { start: 3, end: 5, quarter: 'Q2' };
+  if (month <= 8) return { start: 6, end: 8, quarter: 'Q3' };
+  return { start: 9, end: 11, quarter: 'Q4' };
+};
+
+export const getQuarterMonths = (month: number) => {
+  const bounds = getQuarterBounds(month);
+  return { start: bounds.start, end: Math.min(bounds.end, month) };
+};
 
 export const getSampleDynamicsData = (): { 
   currentMonth: SalesData; 
@@ -109,15 +120,18 @@ export const filterManualOrders = (
   orders: ManualOrder[], 
   filters: DashboardFilters, 
   currentMonth: number, 
-  isYTD: boolean
+  viewMode: string
 ): ManualOrder[] => {
   return orders.filter(order => {
     const orderDate = new Date(order.orderDate);
     const orderMonth = orderDate.getMonth();
     
     let dateMatch = false;
-    if (isYTD) {
+    if (viewMode === 'ytd') {
       dateMatch = orderMonth <= currentMonth;
+    } else if (viewMode === 'qtd') {
+      const quarterBounds = getQuarterMonths(currentMonth);
+      dateMatch = orderMonth >= quarterBounds.start && orderMonth <= quarterBounds.end;
     } else {
       dateMatch = orderMonth === currentMonth;
     }
@@ -141,13 +155,13 @@ export const combineDataWithManualOrders = (
   viewMode: string,
   targets: any
 ) => {
-  const filteredManualOrders = filterManualOrders(manualOrders, filters, selectedMonth, viewMode === 'ytd');
+  const filteredManualOrders = filterManualOrders(manualOrders, filters, selectedMonth, viewMode);
   
   const manualTotalSales = filteredManualOrders.reduce((sum, order) => sum + order.orderValue, 0);
   const manualTotalGP = filteredManualOrders.reduce((sum, order) => sum + order.grossProfit, 0);
   const manualOrderCount = filteredManualOrders.length;
 
-  // Get base dynamics data for the selected month/YTD
+  // Get base dynamics data for the selected month/QTD/YTD
   const monthlyData = dynamicsData.monthlyTrend;
   let baseData: SalesData;
 
@@ -163,6 +177,19 @@ export const combineDataWithManualOrders = (
       ...ytdData,
       averageMargin: ytdData.totalSales > 0 ? (ytdData.totalGP / ytdData.totalSales) * 100 : 0
     };
+  } else if (viewMode === 'qtd') {
+    const quarterBounds = getQuarterMonths(selectedMonth);
+    const qtdData = monthlyData.slice(quarterBounds.start, quarterBounds.end + 1).reduce((acc, month) => {
+      acc.totalSales += month.sales;
+      acc.totalGP += month.gp;
+      acc.totalOrders += month.totalOrders;
+      return acc;
+    }, { totalSales: 0, totalGP: 0, totalOrders: 0 });
+    
+    baseData = {
+      ...qtdData,
+      averageMargin: qtdData.totalSales > 0 ? (qtdData.totalGP / qtdData.totalSales) * 100 : 0
+    };
   } else {
     const currentMonthIndex = Math.min(selectedMonth, monthlyData.length - 1);
     const currentMonthData = monthlyData[currentMonthIndex];
@@ -174,7 +201,7 @@ export const combineDataWithManualOrders = (
     };
   }
 
-  // Apply additional filters (salesperson, customer)
+  // Apply additional filters (salesperson, customer) - only for monthly view
   if (filters.salesperson !== 'all' && viewMode === 'monthly') {
     const currentMonthIndex = Math.min(selectedMonth, monthlyData.length - 1);
     const currentMonthData = monthlyData[currentMonthIndex];
@@ -230,7 +257,7 @@ export const combineDataWithManualOrders = (
     band.percentage = totalMarginBandValue > 0 ? (band.value / totalMarginBandValue) * 100 : 0;
   });
 
-  // FIXED: Update monthly trend to include manual orders
+  // Update monthly trend to include manual orders
   const updatedMonthlyTrend = monthlyData.map(monthData => {
     const monthIndex = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(monthData.month);
     
