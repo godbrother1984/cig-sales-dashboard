@@ -1,15 +1,23 @@
 
 export interface DynamicsApiResponse {
   result: boolean;
-  datas: Array<{
-    month: string;
-    total_inv: number;
-    total_inv_amount: number;
-    gm_inv: number;
-    inv_margin_below_10: number;
-    inv_margin_10_to_20: number;
-    inv_margin_above_20: number;
-  }>;
+  datas: {
+    invoice: Array<{
+      month: string;
+      total_inv: number;
+      total_inv_amount: number;
+      gm_inv: number;
+      inv_margin_below_10: number;
+      inv_margin_10_to_20: number;
+      inv_margin_above_20: number;
+    }>;
+    sales_order: Array<{
+      month: string;
+      total_so: number;
+      total_so_amount: number;
+      gm_so: number;
+    }>;
+  };
   canChange: boolean;
   errors: any;
 }

@@ -5,8 +5,12 @@ import { DynamicsApiResponse } from '../services/dynamicsApiService';
 export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) => {
   console.log('Transforming API data:', apiData);
   
-  // Handle the flat array structure - treat as invoice data
-  const invoiceData = apiData.datas || [];
+  // Handle the nested structure - get invoice and sales order data
+  const invoiceData = apiData.datas?.invoice || [];
+  const salesOrderData = apiData.datas?.sales_order || [];
+  
+  console.log('Invoice data:', invoiceData);
+  console.log('Sales order data:', salesOrderData);
   
   const currentMonth = new Date().getMonth();
   const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
@@ -14,48 +18,56 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   // Transform monthly data from API response
   const monthlyTrend: MonthlyData[] = [];
   
-  for (let i = 0; i <= Math.min(currentMonth, invoiceData.length - 1); i++) {
+  for (let i = 0; i <= Math.min(currentMonth, 11); i++) {
     const monthKey = months[i];
-    const monthData = invoiceData.find(item => item.month === monthKey);
     
-    if (monthData && (monthData.total_inv_amount > 0 || monthData.gm_inv > 0 || monthData.total_inv > 0)) {
+    // Find data for this month in both invoice and sales order arrays
+    const invoiceMonthData = invoiceData.find(item => item.month === monthKey);
+    const salesOrderMonthData = salesOrderData.find(item => item.month === monthKey);
+    
+    // Combine invoice and sales order data
+    const totalSales = (invoiceMonthData?.total_inv_amount || 0) + (salesOrderMonthData?.total_so_amount || 0);
+    const totalGP = (invoiceMonthData?.gm_inv || 0) + (salesOrderMonthData?.gm_so || 0);
+    const totalOrders = (invoiceMonthData?.total_inv || 0) + (salesOrderMonthData?.total_so || 0);
+    
+    if (totalSales > 0 || totalGP > 0 || totalOrders > 0) {
       monthlyTrend.push({
         month: monthKey.charAt(0).toUpperCase() + monthKey.slice(1), // Capitalize first letter
-        sales: monthData.total_inv_amount,
-        gp: monthData.gm_inv,
-        totalOrders: monthData.total_inv,
+        sales: totalSales,
+        gp: totalGP,
+        totalOrders: totalOrders,
         salespeople: {
           'John Smith': { 
-            sales: monthData.total_inv_amount * 0.3, 
-            gp: monthData.gm_inv * 0.3, 
-            orders: Math.floor(monthData.total_inv * 0.3) 
+            sales: totalSales * 0.3, 
+            gp: totalGP * 0.3, 
+            orders: Math.floor(totalOrders * 0.3) 
           },
           'Sarah Johnson': { 
-            sales: monthData.total_inv_amount * 0.4, 
-            gp: monthData.gm_inv * 0.4, 
-            orders: Math.floor(monthData.total_inv * 0.4) 
+            sales: totalSales * 0.4, 
+            gp: totalGP * 0.4, 
+            orders: Math.floor(totalOrders * 0.4) 
           },
           'Mike Chen': { 
-            sales: monthData.total_inv_amount * 0.3, 
-            gp: monthData.gm_inv * 0.3, 
-            orders: Math.floor(monthData.total_inv * 0.3) 
+            sales: totalSales * 0.3, 
+            gp: totalGP * 0.3, 
+            orders: Math.floor(totalOrders * 0.3) 
           }
         },
         customers: {
           'Toyota Motor Thailand': { 
-            sales: monthData.total_inv_amount * 0.35, 
-            gp: monthData.gm_inv * 0.35, 
-            orders: Math.floor(monthData.total_inv * 0.35) 
+            sales: totalSales * 0.35, 
+            gp: totalGP * 0.35, 
+            orders: Math.floor(totalOrders * 0.35) 
           },
           'Honda Automobile Thailand': { 
-            sales: monthData.total_inv_amount * 0.35, 
-            gp: monthData.gm_inv * 0.35, 
-            orders: Math.floor(monthData.total_inv * 0.35) 
+            sales: totalSales * 0.35, 
+            gp: totalGP * 0.35, 
+            orders: Math.floor(totalOrders * 0.35) 
           },
           'Isuzu Motors': { 
-            sales: monthData.total_inv_amount * 0.3, 
-            gp: monthData.gm_inv * 0.3, 
-            orders: Math.floor(monthData.total_inv * 0.3) 
+            sales: totalSales * 0.3, 
+            gp: totalGP * 0.3, 
+            orders: Math.floor(totalOrders * 0.3) 
           }
         }
       });
@@ -76,15 +88,15 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
 
   // Transform margin bands from current month data
   const marginBands: MarginBand[] = [];
-  const currentApiData = invoiceData[Math.min(currentMonth, invoiceData.length - 1)];
+  const currentInvoiceData = invoiceData[Math.min(currentMonth, invoiceData.length - 1)];
   
-  if (currentApiData) {
-    const totalValue = currentApiData.total_inv_amount;
-    const totalOrders = currentApiData.total_inv;
+  if (currentInvoiceData) {
+    const totalValue = currentInvoiceData.total_inv_amount || 0;
+    const totalOrders = currentInvoiceData.total_inv || 0;
     
-    const below10Orders = currentApiData.inv_margin_below_10;
-    const band10to20Orders = currentApiData.inv_margin_10_to_20;
-    const above20Orders = currentApiData.inv_margin_above_20;
+    const below10Orders = currentInvoiceData.inv_margin_below_10 || 0;
+    const band10to20Orders = currentInvoiceData.inv_margin_10_to_20 || 0;
+    const above20Orders = currentInvoiceData.inv_margin_above_20 || 0;
     
     const below10Value = totalOrders > 0 ? totalValue * (below10Orders / totalOrders) : 0;
     const band10to20Value = totalOrders > 0 ? totalValue * (band10to20Orders / totalOrders) : 0;
@@ -125,5 +137,39 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
     currentMonth: currentMonth_,
     marginBands,
     monthlyTrend
+  };
+};
+
+export const getEmptyDataStructure = () => {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  return {
+    currentMonth: {
+      totalSales: 0,
+      totalGP: 0,
+      totalOrders: 0,
+      averageMargin: 0
+    },
+    marginBands: [
+      { band: '<10%', orders: 0, value: 0, percentage: 0 },
+      { band: '10-20%', orders: 0, value: 0, percentage: 0 },
+      { band: '>20%', orders: 0, value: 0, percentage: 0 }
+    ],
+    monthlyTrend: months.map(month => ({
+      month,
+      sales: 0,
+      gp: 0,
+      totalOrders: 0,
+      salespeople: {
+        'John Smith': { sales: 0, gp: 0, orders: 0 },
+        'Sarah Johnson': { sales: 0, gp: 0, orders: 0 },
+        'Mike Chen': { sales: 0, gp: 0, orders: 0 }
+      },
+      customers: {
+        'Toyota Motor Thailand': { sales: 0, gp: 0, orders: 0 },
+        'Honda Automobile Thailand': { sales: 0, gp: 0, orders: 0 },
+        'Isuzu Motors': { sales: 0, gp: 0, orders: 0 }
+      }
+    }))
   };
 };

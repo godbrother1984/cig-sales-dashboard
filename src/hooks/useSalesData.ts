@@ -1,10 +1,10 @@
 
 import { useState, useEffect } from 'react';
-import { getSampleDynamicsData, combineDataWithManualOrders } from '../utils/dataUtils';
+import { combineDataWithManualOrders } from '../utils/dataCombination';
 import { ManualOrder, DashboardFilters, Targets } from '../types';
 import { DynamicsApiService } from '../services/dynamicsApiService';
 import { ApiConfigService } from '../services/apiConfigService';
-import { transformApiDataToExpectedFormat } from '../utils/apiDataTransformer';
+import { transformApiDataToExpectedFormat, getEmptyDataStructure } from '../utils/apiDataTransformer';
 import { toast } from '@/hooks/use-toast';
 
 export const useSalesData = (
@@ -26,8 +26,8 @@ export const useSalesData = (
     const config = ApiConfigService.getConfig();
     
     if (!config.isEnabled) {
-      console.log('API is disabled, using sample data');
-      return getSampleDynamicsData();
+      console.log('API is disabled, using empty data structure');
+      return getEmptyDataStructure();
     }
 
     try {
@@ -53,18 +53,18 @@ export const useSalesData = (
       return transformedData;
       
     } catch (error) {
-      console.error('API fetch failed, falling back to sample data:', error);
+      console.error('API fetch failed, using empty data structure:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown API error';
       setApiError(errorMessage);
       
       // Show error toast notification
       toast({
         title: "API Connection Failed",
-        description: `Failed to connect to MS Dynamics API: ${errorMessage}. Using sample data instead. Please check your API settings.`,
+        description: `Failed to connect to MS Dynamics API: ${errorMessage}. Showing manual entries only.`,
         variant: "destructive",
       });
       
-      return getSampleDynamicsData();
+      return getEmptyDataStructure();
     }
   };
 
