@@ -6,10 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { AlertCircle, CheckCircle, Settings } from 'lucide-react';
-import { ApiConfigService, ApiConfiguration } from '../services/apiConfigService';
+import { ApiConfigService, type ApiConfiguration } from '../services/apiConfigService';
 import { DynamicsApiService } from '../services/dynamicsApiService';
 
-export const ApiConfiguration = () => {
+export const ApiConfigurationPanel = () => {
   const [config, setConfig] = useState<ApiConfiguration>(ApiConfigService.getConfig());
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'success' | 'error'>('unknown');

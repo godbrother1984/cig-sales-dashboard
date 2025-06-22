@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { KPISummary } from '../components/KPISummary';
 import { TargetActualChart } from '../components/TargetActualChart';
@@ -8,7 +7,7 @@ import { TrendChart } from '../components/TrendChart';
 import { DashboardHeader } from '../components/DashboardHeader';
 import { MonthYTDSelector } from '../components/MonthYTDSelector';
 import { ActionItemsCard } from '../components/ActionItemsCard';
-import { ApiConfiguration } from '../components/ApiConfiguration';
+import { ApiConfigurationPanel } from '../components/ApiConfiguration';
 import { useSalesData } from '../hooks/useSalesData';
 import { Targets, DashboardFilters as DashboardFiltersType } from '../types';
 import { Settings } from 'lucide-react';
@@ -113,7 +112,7 @@ const Index = () => {
               <DialogHeader>
                 <DialogTitle>API Configuration</DialogTitle>
               </DialogHeader>
-              <ApiConfiguration />
+              <ApiConfigurationPanel />
             </DialogContent>
           </Dialog>
         </div>

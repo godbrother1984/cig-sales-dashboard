@@ -43,12 +43,30 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
     averageMargin: currentMonthData.sales > 0 ? (currentMonthData.gp / currentMonthData.sales) * 100 : 0
   };
 
-  // Transform margin bands - adapt based on your API structure
-  const marginBands: MarginBand[] = apiData.salesData?.marginBands || [
-    { band: '<10%', orders: 0, value: 0, percentage: 0 },
-    { band: '10-20%', orders: 0, value: 0, percentage: 0 },
-    { band: '>20%', orders: 0, value: 0, percentage: 0 }
-  ];
+  // Transform margin bands - handle missing marginBands property
+  const marginBands: MarginBand[] = [];
+  
+  // Check if marginBands exists in the API response
+  if (apiData.salesData && Array.isArray(apiData.salesData) && apiData.salesData.length > 0) {
+    // Try to extract margin band data from the sales data
+    // This is a placeholder - adjust based on your actual API structure
+    const salesDataArray = apiData.salesData;
+    
+    // If your API has margin band data, extract it here
+    // For now, providing default structure
+    marginBands.push(
+      { band: '<10%', orders: 0, value: 0, percentage: 0 },
+      { band: '10-20%', orders: 0, value: 0, percentage: 0 },
+      { band: '>20%', orders: 0, value: 0, percentage: 0 }
+    );
+  } else {
+    // Default margin bands if no data available
+    marginBands.push(
+      { band: '<10%', orders: 0, value: 0, percentage: 0 },
+      { band: '10-20%', orders: 0, value: 0, percentage: 0 },
+      { band: '>20%', orders: 0, value: 0, percentage: 0 }
+    );
+  }
 
   return {
     currentMonth: currentMonth_,
