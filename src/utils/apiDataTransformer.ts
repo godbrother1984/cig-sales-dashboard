@@ -12,33 +12,40 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   console.log('Invoice data:', invoiceData);
   console.log('Sales order data:', salesOrderData);
   
-  const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  // Define month order for chronological comparison
+  const monthOrder = {
+    'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+    'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
+  };
   
-  // Find the actual latest month with data from the API response by searching backwards
-  let latestMonthData = null;
-  let latestMonthIndex = -1;
+  // Extract all unique months that actually exist in the API data
+  const availableMonths = new Set<string>();
+  invoiceData.forEach(item => availableMonths.add(item.month));
+  salesOrderData.forEach(item => availableMonths.add(item.month));
   
-  // Search backwards through months to find the latest month that exists in the API data
-  for (let i = months.length - 1; i >= 0; i--) {
-    const monthKey = months[i];
-    const invoiceMonth = invoiceData.find(item => item.month === monthKey);
-    const salesOrderMonth = salesOrderData.find(item => item.month === monthKey);
-    
-    if (invoiceMonth || salesOrderMonth) {
-      latestMonthData = {
-        invoice: invoiceMonth,
-        salesOrder: salesOrderMonth,
-        monthKey: monthKey
-      };
-      latestMonthIndex = i;
-      console.log(`Found latest month: ${monthKey} at index ${i}`);
-      break; // Stop at the first (latest) month found
+  const availableMonthsArray = Array.from(availableMonths);
+  console.log('Available months in API data:', availableMonthsArray);
+  
+  // Find the chronologically latest month from the available data
+  let latestMonth = '';
+  let latestMonthOrder = 0;
+  
+  availableMonthsArray.forEach(month => {
+    const order = monthOrder[month as keyof typeof monthOrder];
+    if (order && order > latestMonthOrder) {
+      latestMonthOrder = order;
+      latestMonth = month;
     }
-  }
+  });
   
-  console.log('Latest month data found:', latestMonthData);
-  console.log('Latest month index:', latestMonthIndex);
-  console.log('Latest month key:', latestMonthData?.monthKey);
+  console.log(`Latest month found: ${latestMonth} (order: ${latestMonthOrder})`);
+  
+  // Get data for the latest month
+  const latestInvoiceData = invoiceData.find(item => item.month === latestMonth);
+  const latestSalesOrderData = salesOrderData.find(item => item.month === latestMonth);
+  
+  console.log('Latest month invoice data:', latestInvoiceData);
+  console.log('Latest month sales order data:', latestSalesOrderData);
   
   // Calculate current month totals from the latest available data
   let currentMonthTotals = {
@@ -48,13 +55,13 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
     averageMargin: 0
   };
   
-  if (latestMonthData) {
-    const invoiceAmount = latestMonthData.invoice?.total_inv_amount || 0;
-    const salesOrderAmount = latestMonthData.salesOrder?.total_so_amount || 0;
-    const invoiceGP = latestMonthData.invoice?.gm_inv || 0;
-    const salesOrderGP = latestMonthData.salesOrder?.gm_so || 0;
-    const invoiceOrders = latestMonthData.invoice?.total_inv || 0;
-    const salesOrderOrders = latestMonthData.salesOrder?.total_so || 0;
+  if (latestMonth) {
+    const invoiceAmount = latestInvoiceData?.total_inv_amount || 0;
+    const salesOrderAmount = latestSalesOrderData?.total_so_amount || 0;
+    const invoiceGP = latestInvoiceData?.gm_inv || 0;
+    const salesOrderGP = latestSalesOrderData?.gm_so || 0;
+    const invoiceOrders = latestInvoiceData?.total_inv || 0;
+    const salesOrderOrders = latestSalesOrderData?.total_so || 0;
     
     currentMonthTotals.totalSales = invoiceAmount + salesOrderAmount;
     currentMonthTotals.totalGP = invoiceGP + salesOrderGP;
@@ -63,7 +70,7 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
       (currentMonthTotals.totalGP / currentMonthTotals.totalSales) * 100 : 0;
     
     console.log('Calculated current month totals from latest data:', {
-      latestMonth: latestMonthData.monthKey,
+      latestMonth: latestMonth,
       invoiceAmount,
       salesOrderAmount,
       totalSales: currentMonthTotals.totalSales,
@@ -82,78 +89,81 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
     }
   }
   
-  // Transform monthly data from API response
+  // Transform monthly data from API response - use available months sorted chronologically
   const monthlyTrend: MonthlyData[] = [];
   
+  // Sort available months chronologically
+  const sortedAvailableMonths = availableMonthsArray.sort((a, b) => {
+    const orderA = monthOrder[a as keyof typeof monthOrder] || 0;
+    const orderB = monthOrder[b as keyof typeof monthOrder] || 0;
+    return orderA - orderB;
+  });
+  
+  console.log('Sorted available months:', sortedAvailableMonths);
+  
   // Generate monthly trend for all months that have data in the API response
-  for (let i = 0; i < months.length; i++) {
-    const monthKey = months[i];
-    
+  sortedAvailableMonths.forEach(monthKey => {
     // Find data for this month in both invoice and sales order arrays
     const invoiceMonthData = invoiceData.find(item => item.month === monthKey);
     const salesOrderMonthData = salesOrderData.find(item => item.month === monthKey);
     
-    // Only include months that have data
-    if (invoiceMonthData || salesOrderMonthData) {
-      // Combine invoice and sales order data
-      const totalSales = (invoiceMonthData?.total_inv_amount || 0) + (salesOrderMonthData?.total_so_amount || 0);
-      const totalGP = (invoiceMonthData?.gm_inv || 0) + (salesOrderMonthData?.gm_so || 0);
-      const totalOrders = (invoiceMonthData?.total_inv || 0) + (salesOrderMonthData?.total_so || 0);
-      
-      monthlyTrend.push({
-        month: monthKey.charAt(0).toUpperCase() + monthKey.slice(1), // Capitalize first letter
-        sales: totalSales,
-        gp: totalGP,
-        totalOrders: totalOrders,
-        salespeople: {
-          'John Smith': { 
-            sales: totalSales * 0.3, 
-            gp: totalGP * 0.3, 
-            orders: Math.floor(totalOrders * 0.3) 
-          },
-          'Sarah Johnson': { 
-            sales: totalSales * 0.4, 
-            gp: totalGP * 0.4, 
-            orders: Math.floor(totalOrders * 0.4) 
-          },
-          'Mike Chen': { 
-            sales: totalSales * 0.3, 
-            gp: totalGP * 0.3, 
-            orders: Math.floor(totalOrders * 0.3) 
-          }
+    // Combine invoice and sales order data
+    const totalSales = (invoiceMonthData?.total_inv_amount || 0) + (salesOrderMonthData?.total_so_amount || 0);
+    const totalGP = (invoiceMonthData?.gm_inv || 0) + (salesOrderMonthData?.gm_so || 0);
+    const totalOrders = (invoiceMonthData?.total_inv || 0) + (salesOrderMonthData?.total_so || 0);
+    
+    monthlyTrend.push({
+      month: monthKey.charAt(0).toUpperCase() + monthKey.slice(1), // Capitalize first letter
+      sales: totalSales,
+      gp: totalGP,
+      totalOrders: totalOrders,
+      salespeople: {
+        'John Smith': { 
+          sales: totalSales * 0.3, 
+          gp: totalGP * 0.3, 
+          orders: Math.floor(totalOrders * 0.3) 
         },
-        customers: {
-          'Toyota Motor Thailand': { 
-            sales: totalSales * 0.35, 
-            gp: totalGP * 0.35, 
-            orders: Math.floor(totalOrders * 0.35) 
-          },
-          'Honda Automobile Thailand': { 
-            sales: totalSales * 0.35, 
-            gp: totalGP * 0.35, 
-            orders: Math.floor(totalOrders * 0.35) 
-          },
-          'Isuzu Motors': { 
-            sales: totalSales * 0.3, 
-            gp: totalGP * 0.3, 
-            orders: Math.floor(totalOrders * 0.3) 
-          }
+        'Sarah Johnson': { 
+          sales: totalSales * 0.4, 
+          gp: totalGP * 0.4, 
+          orders: Math.floor(totalOrders * 0.4) 
+        },
+        'Mike Chen': { 
+          sales: totalSales * 0.3, 
+          gp: totalGP * 0.3, 
+          orders: Math.floor(totalOrders * 0.3) 
         }
-      });
-    }
-  }
+      },
+      customers: {
+        'Toyota Motor Thailand': { 
+          sales: totalSales * 0.35, 
+          gp: totalGP * 0.35, 
+          orders: Math.floor(totalOrders * 0.35) 
+        },
+        'Honda Automobile Thailand': { 
+          sales: totalSales * 0.35, 
+          gp: totalGP * 0.35, 
+          orders: Math.floor(totalOrders * 0.35) 
+        },
+        'Isuzu Motors': { 
+          sales: totalSales * 0.3, 
+          gp: totalGP * 0.3, 
+          orders: Math.floor(totalOrders * 0.3) 
+        }
+      }
+    });
+  });
 
   // Transform margin bands from the latest month data
   const marginBands: MarginBand[] = [];
   
-  if (latestMonthData?.invoice) {
-    const currentInvoiceData = latestMonthData.invoice;
-    const totalValue = currentInvoiceData.total_inv_amount || 0;
-    const totalOrders = currentInvoiceData.total_inv || 0;
+  if (latestInvoiceData) {
+    const totalValue = latestInvoiceData.total_inv_amount || 0;
+    const totalOrders = latestInvoiceData.total_inv || 0;
     
-    const below10Orders = currentInvoiceData.inv_margin_below_10 || 0;
-    const band10to20Orders = currentInvoiceData.inv_margin_10_to_20 || 0;
-    const above20Orders = currentInvoiceData.inv_margin_above_20 || 0;
+    const below10Orders = latestInvoiceData.inv_margin_below_10 || 0;
+    const band10to20Orders = latestInvoiceData.inv_margin_10_to_20 || 0;
+    const above20Orders = latestInvoiceData.inv_margin_above_20 || 0;
     
     const below10Value = totalOrders > 0 ? totalValue * (below10Orders / totalOrders) : 0;
     const band10to20Value = totalOrders > 0 ? totalValue * (band10to20Orders / totalOrders) : 0;
