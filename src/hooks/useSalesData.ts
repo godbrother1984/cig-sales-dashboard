@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { combineDataWithManualOrders } from '../utils/dataCombination';
 import { ManualOrder, DashboardFilters, Targets } from '../types';
@@ -89,12 +88,12 @@ export const useSalesData = (
         // Show error toast for any other errors
         toast({
           title: "Data Loading Error",
-          description: "An unexpected error occurred while loading data. Using sample data instead.",
+          description: "An unexpected error occurred while loading data. Using empty data structure.",
           variant: "destructive",
         });
         
-        // Fallback to sample data
-        const dynamicsData = getSampleDynamicsData();
+        // Fallback to empty data structure instead of sample data
+        const dynamicsData = getEmptyDataStructure();
         const manualOrders = loadManualOrders();
         const combinedData = combineDataWithManualOrders(
           dynamicsData, 
