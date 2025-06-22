@@ -5,6 +5,7 @@ import { ManualOrder, DashboardFilters, Targets } from '../types';
 import { DynamicsApiService } from '../services/dynamicsApiService';
 import { ApiConfigService } from '../services/apiConfigService';
 import { transformApiDataToExpectedFormat } from '../utils/apiDataTransformer';
+import { toast } from '@/hooks/use-toast';
 
 export const useSalesData = (
   filters: DashboardFilters,
@@ -39,12 +40,30 @@ export const useSalesData = (
       const transformedData = transformApiDataToExpectedFormat(apiResponse);
       
       console.log('Successfully fetched and transformed API data');
+      
+      // Clear any previous errors and show success if we had errors before
+      if (apiError) {
+        toast({
+          title: "API Connection Restored",
+          description: "Successfully connected to MS Dynamics API",
+          variant: "default",
+        });
+      }
       setApiError(null);
       return transformedData;
       
     } catch (error) {
       console.error('API fetch failed, falling back to sample data:', error);
-      setApiError(error instanceof Error ? error.message : 'Unknown API error');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown API error';
+      setApiError(errorMessage);
+      
+      // Show error toast notification
+      toast({
+        title: "API Connection Failed",
+        description: `Failed to connect to MS Dynamics API: ${errorMessage}. Using sample data instead. Please check your API settings.`,
+        variant: "destructive",
+      });
+      
       return getSampleDynamicsData();
     }
   };
@@ -66,6 +85,14 @@ export const useSalesData = (
         setSalesData(combinedData);
       } catch (error) {
         console.error('Error in fetchSalesData:', error);
+        
+        // Show error toast for any other errors
+        toast({
+          title: "Data Loading Error",
+          description: "An unexpected error occurred while loading data. Using sample data instead.",
+          variant: "destructive",
+        });
+        
         // Fallback to sample data
         const dynamicsData = getSampleDynamicsData();
         const manualOrders = loadManualOrders();

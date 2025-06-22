@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { KPISummary } from '../components/KPISummary';
 import { TargetActualChart } from '../components/TargetActualChart';
@@ -31,7 +32,7 @@ const Index = () => {
     salesperson: 'all'
   });
 
-  const { salesData, isLoading, apiError } = useSalesData(filters, selectedMonth, viewMode, targets);
+  const { salesData, isLoading } = useSalesData(filters, selectedMonth, viewMode, targets);
 
   useEffect(() => {
     const savedTargets = localStorage.getItem('salesTargets');
@@ -52,11 +53,6 @@ const Index = () => {
         <div className="text-center">
           <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading dashboard data...</p>
-          {apiError && (
-            <p className="text-sm text-orange-600 mt-2">
-              API connection failed, using sample data
-            </p>
-          )}
         </div>
       </div>
     );
@@ -116,14 +112,6 @@ const Index = () => {
             </DialogContent>
           </Dialog>
         </div>
-
-        {apiError && (
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-            <p className="text-orange-800 text-sm">
-              <strong>API Notice:</strong> {apiError}. Currently displaying sample data.
-            </p>
-          </div>
-        )}
 
         <DashboardFilters filters={filters} onFilterChange={setFilters} />
 
