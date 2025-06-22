@@ -5,42 +5,47 @@ import { DynamicsApiResponse } from '../services/dynamicsApiService';
 export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) => {
   console.log('Transforming API data:', apiData);
   
-  // Extract invoice data (use invoice data as primary source)
+  // Extract both invoice and sales order data
   const invoiceData = apiData.datas?.invoice || [];
   const salesOrderData = apiData.datas?.sales_order || [];
   
   const currentMonth = new Date().getMonth();
   const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
   
-  // Transform monthly data from API response
+  // Transform monthly data from API response - combine invoice and SO data
   const monthlyTrend: MonthlyData[] = [];
   
-  for (let i = 0; i <= Math.min(currentMonth, invoiceData.length - 1); i++) {
+  for (let i = 0; i <= Math.min(currentMonth, Math.max(invoiceData.length - 1, salesOrderData.length - 1)); i++) {
     const monthKey = months[i];
     const invoiceMonth = invoiceData.find(item => item.month === monthKey);
     const salesMonth = salesOrderData.find(item => item.month === monthKey);
     
-    if (invoiceMonth) {
+    // Combine both invoice and sales order amounts
+    const combinedSales = (invoiceMonth?.total_inv_amount || 0) + (salesMonth?.total_so_amount || 0);
+    const combinedGP = (invoiceMonth?.gm_inv || 0) + (salesMonth?.gm_so || 0);
+    const combinedOrders = (invoiceMonth?.total_inv || 0) + (salesMonth?.total_so || 0);
+    
+    if (combinedSales > 0 || combinedGP > 0 || combinedOrders > 0) {
       monthlyTrend.push({
         month: monthKey.charAt(0).toUpperCase() + monthKey.slice(1), // Capitalize first letter
-        sales: invoiceMonth.total_inv_amount || 0,
-        gp: invoiceMonth.gm_inv || 0,
-        totalOrders: invoiceMonth.total_inv || 0,
+        sales: combinedSales,
+        gp: combinedGP,
+        totalOrders: combinedOrders,
         salespeople: {
-          'John Smith': { sales: (invoiceMonth.total_inv_amount || 0) * 0.3, gp: (invoiceMonth.gm_inv || 0) * 0.3, orders: Math.floor((invoiceMonth.total_inv || 0) * 0.3) },
-          'Sarah Johnson': { sales: (invoiceMonth.total_inv_amount || 0) * 0.4, gp: (invoiceMonth.gm_inv || 0) * 0.4, orders: Math.floor((invoiceMonth.total_inv || 0) * 0.4) },
-          'Mike Chen': { sales: (invoiceMonth.total_inv_amount || 0) * 0.3, gp: (invoiceMonth.gm_inv || 0) * 0.3, orders: Math.floor((invoiceMonth.total_inv || 0) * 0.3) }
+          'John Smith': { sales: combinedSales * 0.3, gp: combinedGP * 0.3, orders: Math.floor(combinedOrders * 0.3) },
+          'Sarah Johnson': { sales: combinedSales * 0.4, gp: combinedGP * 0.4, orders: Math.floor(combinedOrders * 0.4) },
+          'Mike Chen': { sales: combinedSales * 0.3, gp: combinedGP * 0.3, orders: Math.floor(combinedOrders * 0.3) }
         },
         customers: {
-          'Toyota Motor Thailand': { sales: (invoiceMonth.total_inv_amount || 0) * 0.35, gp: (invoiceMonth.gm_inv || 0) * 0.35, orders: Math.floor((invoiceMonth.total_inv || 0) * 0.35) },
-          'Honda Automobile Thailand': { sales: (invoiceMonth.total_inv_amount || 0) * 0.35, gp: (invoiceMonth.gm_inv || 0) * 0.35, orders: Math.floor((invoiceMonth.total_inv || 0) * 0.35) },
-          'Isuzu Motors': { sales: (invoiceMonth.total_inv_amount || 0) * 0.3, gp: (invoiceMonth.gm_inv || 0) * 0.3, orders: Math.floor((invoiceMonth.total_inv || 0) * 0.3) }
+          'Toyota Motor Thailand': { sales: combinedSales * 0.35, gp: combinedGP * 0.35, orders: Math.floor(combinedOrders * 0.35) },
+          'Honda Automobile Thailand': { sales: combinedSales * 0.35, gp: combinedGP * 0.35, orders: Math.floor(combinedOrders * 0.35) },
+          'Isuzu Motors': { sales: combinedSales * 0.3, gp: combinedGP * 0.3, orders: Math.floor(combinedOrders * 0.3) }
         }
       });
     }
   }
 
-  // Get current month data for summary
+  // Get current month data for summary - combine invoice and SO
   const currentMonthData = monthlyTrend[Math.min(currentMonth, monthlyTrend.length - 1)] || {
     sales: 0, gp: 0, totalOrders: 0
   };
@@ -52,22 +57,23 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
     averageMargin: currentMonthData.sales > 0 ? (currentMonthData.gp / currentMonthData.sales) * 100 : 0
   };
 
-  // Transform margin bands from current month invoice data
+  // Transform margin bands from current month - combine both invoice and SO data
   const marginBands: MarginBand[] = [];
   const currentInvoiceData = invoiceData[Math.min(currentMonth, invoiceData.length - 1)];
+  const currentSOData = salesOrderData[Math.min(currentMonth, salesOrderData.length - 1)];
   
-  if (currentInvoiceData) {
-    const totalValue = currentInvoiceData.total_inv_amount || 0;
-    const totalOrders = currentInvoiceData.total_inv || 0;
+  if (currentInvoiceData || currentSOData) {
+    const totalValue = (currentInvoiceData?.total_inv_amount || 0) + (currentSOData?.total_so_amount || 0);
+    const totalOrders = (currentInvoiceData?.total_inv || 0) + (currentSOData?.total_so || 0);
     
-    // Calculate approximate values for each margin band
-    const below10Orders = currentInvoiceData.inv_margin_below_10 || 0;
-    const band10to20Orders = currentInvoiceData.inv_margin_10_to_20 || 0;
-    const above20Orders = currentInvoiceData.inv_margin_above_20 || 0;
+    // Combine margin band data from both sources
+    const below10Orders = (currentInvoiceData?.inv_margin_below_10 || 0) + (currentSOData?.so_margin_below_10 || 0);
+    const band10to20Orders = (currentInvoiceData?.inv_margin_10_to_20 || 0) + (currentSOData?.so_margin_10_to_20 || 0);
+    const above20Orders = (currentInvoiceData?.inv_margin_above_20 || 0) + (currentSOData?.so_margin_above_20 || 0);
     
-    const below10Value = totalValue * (below10Orders / totalOrders);
-    const band10to20Value = totalValue * (band10to20Orders / totalOrders);
-    const above20Value = totalValue * (above20Orders / totalOrders);
+    const below10Value = totalOrders > 0 ? totalValue * (below10Orders / totalOrders) : 0;
+    const band10to20Value = totalOrders > 0 ? totalValue * (band10to20Orders / totalOrders) : 0;
+    const above20Value = totalOrders > 0 ? totalValue * (above20Orders / totalOrders) : 0;
     
     marginBands.push(
       { 
