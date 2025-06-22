@@ -14,13 +14,12 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   
   const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
   
-  // Find the latest month with data
+  // Find the actual latest month with data from the API response
   let latestMonthData = null;
   let latestMonthIndex = -1;
   
-  // Check from current month backwards to find the latest month with data
-  const currentMonth = new Date().getMonth();
-  for (let i = currentMonth; i >= 0; i--) {
+  // Find the highest month index that exists in the API data
+  for (let i = 0; i < months.length; i++) {
     const monthKey = months[i];
     const invoiceMonth = invoiceData.find(item => item.month === monthKey);
     const salesOrderMonth = salesOrderData.find(item => item.month === monthKey);
@@ -37,6 +36,8 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   }
   
   console.log('Latest month data found:', latestMonthData);
+  console.log('Latest month index:', latestMonthIndex);
+  console.log('Latest month key:', latestMonthData?.monthKey);
   
   // Calculate current month totals from the latest available data
   let currentMonthTotals = {
@@ -60,7 +61,8 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
     currentMonthTotals.averageMargin = currentMonthTotals.totalSales > 0 ? 
       (currentMonthTotals.totalGP / currentMonthTotals.totalSales) * 100 : 0;
     
-    console.log('Calculated current month totals:', {
+    console.log('Calculated current month totals from latest data:', {
+      latestMonth: latestMonthData.monthKey,
       invoiceAmount,
       salesOrderAmount,
       totalSales: currentMonthTotals.totalSales,
@@ -70,12 +72,20 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
       totalOrders: currentMonthTotals.totalOrders,
       averageMargin: currentMonthTotals.averageMargin
     });
+    
+    // Validation: Check if we get the expected total
+    if (currentMonthTotals.totalSales === 3893945) {
+      console.log('✅ SUCCESS: Total sales matches expected value of 3,893,945');
+    } else {
+      console.log('❌ MISMATCH: Expected 3,893,945 but got', currentMonthTotals.totalSales);
+    }
   }
   
   // Transform monthly data from API response
   const monthlyTrend: MonthlyData[] = [];
   
-  for (let i = 0; i <= Math.min(currentMonth, 11); i++) {
+  // Use the latest month index to determine how many months to show
+  for (let i = 0; i <= latestMonthIndex; i++) {
     const monthKey = months[i];
     
     // Find data for this month in both invoice and sales order arrays
