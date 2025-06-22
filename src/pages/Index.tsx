@@ -8,8 +8,12 @@ import { TrendChart } from '../components/TrendChart';
 import { DashboardHeader } from '../components/DashboardHeader';
 import { MonthYTDSelector } from '../components/MonthYTDSelector';
 import { ActionItemsCard } from '../components/ActionItemsCard';
+import { ApiConfiguration } from '../components/ApiConfiguration';
 import { useSalesData } from '../hooks/useSalesData';
 import { Targets, DashboardFilters as DashboardFiltersType } from '../types';
+import { Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const Index = () => {
   const [targets, setTargets] = useState<Targets>({
@@ -28,13 +32,12 @@ const Index = () => {
     salesperson: 'all'
   });
 
-  const salesData = useSalesData(filters, selectedMonth, viewMode, targets);
+  const { salesData, isLoading, apiError } = useSalesData(filters, selectedMonth, viewMode, targets);
 
   useEffect(() => {
     const savedTargets = localStorage.getItem('salesTargets');
     if (savedTargets) {
       const parsedTargets = JSON.parse(savedTargets);
-      // Ensure backward compatibility by setting default quarterly targets if they don't exist
       const updatedTargets = {
         ...parsedTargets,
         quarterlySales: parsedTargets.quarterlySales || parsedTargets.monthlySales * 3,
@@ -43,6 +46,22 @@ const Index = () => {
       setTargets(updatedTargets);
     }
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading dashboard data...</p>
+          {apiError && (
+            <p className="text-sm text-orange-600 mt-2">
+              API connection failed, using sample data
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (!salesData) {
     return (
@@ -75,12 +94,37 @@ const Index = () => {
       <DashboardHeader />
 
       <div className="container mx-auto px-6 py-6 space-y-6">
-        <MonthYTDSelector
-          viewMode={viewMode}
-          selectedMonth={selectedMonth}
-          onViewModeChange={setViewMode}
-          onMonthChange={setSelectedMonth}
-        />
+        <div className="flex justify-between items-center">
+          <MonthYTDSelector
+            viewMode={viewMode}
+            selectedMonth={selectedMonth}
+            onViewModeChange={setViewMode}
+            onMonthChange={setSelectedMonth}
+          />
+          
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Settings className="h-4 w-4 mr-2" />
+                API Settings
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>API Configuration</DialogTitle>
+              </DialogHeader>
+              <ApiConfiguration />
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {apiError && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <p className="text-orange-800 text-sm">
+              <strong>API Notice:</strong> {apiError}. Currently displaying sample data.
+            </p>
+          </div>
+        )}
 
         <DashboardFilters filters={filters} onFilterChange={setFilters} />
 

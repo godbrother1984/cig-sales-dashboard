@@ -2,6 +2,9 @@
 import { useState, useEffect } from 'react';
 import { getSampleDynamicsData, combineDataWithManualOrders } from '../utils/dataUtils';
 import { ManualOrder, DashboardFilters, Targets } from '../types';
+import { DynamicsApiService } from '../services/dynamicsApiService';
+import { ApiConfigService } from '../services/apiConfigService';
+import { transformApiDataToExpectedFormat } from '../utils/apiDataTransformer';
 
 export const useSalesData = (
   filters: DashboardFilters,
@@ -10,16 +13,47 @@ export const useSalesData = (
   targets: Targets
 ) => {
   const [salesData, setSalesData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const loadManualOrders = (): ManualOrder[] => {
     const savedOrders = localStorage.getItem('manualOrders');
     return savedOrders ? JSON.parse(savedOrders) : [];
   };
 
+  const fetchDataFromApi = async () => {
+    const config = ApiConfigService.getConfig();
+    
+    if (!config.isEnabled) {
+      console.log('API is disabled, using sample data');
+      return getSampleDynamicsData();
+    }
+
+    try {
+      const apiService = new DynamicsApiService({
+        baseUrl: config.baseUrl,
+        apiKey: config.apiKey
+      });
+
+      const apiResponse = await apiService.fetchSalesData();
+      const transformedData = transformApiDataToExpectedFormat(apiResponse);
+      
+      console.log('Successfully fetched and transformed API data');
+      setApiError(null);
+      return transformedData;
+      
+    } catch (error) {
+      console.error('API fetch failed, falling back to sample data:', error);
+      setApiError(error instanceof Error ? error.message : 'Unknown API error');
+      return getSampleDynamicsData();
+    }
+  };
+
   useEffect(() => {
     const fetchSalesData = async () => {
+      setIsLoading(true);
       try {
-        const dynamicsData = getSampleDynamicsData();
+        const dynamicsData = await fetchDataFromApi();
         const manualOrders = loadManualOrders();
         const combinedData = combineDataWithManualOrders(
           dynamicsData, 
@@ -31,7 +65,8 @@ export const useSalesData = (
         );
         setSalesData(combinedData);
       } catch (error) {
-        console.error('Error fetching sales data:', error);
+        console.error('Error in fetchSalesData:', error);
+        // Fallback to sample data
         const dynamicsData = getSampleDynamicsData();
         const manualOrders = loadManualOrders();
         const combinedData = combineDataWithManualOrders(
@@ -43,6 +78,8 @@ export const useSalesData = (
           targets
         );
         setSalesData(combinedData);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -53,18 +90,21 @@ export const useSalesData = (
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'manualOrders') {
-        const manualOrders = loadManualOrders();
-        const dynamicsData = getSampleDynamicsData();
-        const combinedData = combineDataWithManualOrders(
-          dynamicsData, 
-          manualOrders, 
-          filters, 
-          selectedMonth, 
-          viewMode, 
-          targets
-        );
-        setSalesData(combinedData);
+      if (e.key === 'manualOrders' || e.key === 'dynamics_api_config') {
+        const fetchData = async () => {
+          const dynamicsData = await fetchDataFromApi();
+          const manualOrders = loadManualOrders();
+          const combinedData = combineDataWithManualOrders(
+            dynamicsData, 
+            manualOrders, 
+            filters, 
+            selectedMonth, 
+            viewMode, 
+            targets
+          );
+          setSalesData(combinedData);
+        };
+        fetchData();
       }
     };
 
@@ -72,5 +112,5 @@ export const useSalesData = (
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [filters, selectedMonth, viewMode, targets]);
 
-  return salesData;
+  return { salesData, isLoading, apiError };
 };
