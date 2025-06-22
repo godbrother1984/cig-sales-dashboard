@@ -1,10 +1,28 @@
 
 export interface DynamicsApiResponse {
-  // We'll define this based on your actual API response structure
-  year: number;
-  salesData: any[];
-  targets?: any;
-  monthlyData?: any[];
+  result: boolean;
+  datas: {
+    invoice: Array<{
+      month: string;
+      total_inv: number;
+      total_inv_amount: number;
+      gm_inv: number;
+      inv_margin_below_10: number;
+      inv_margin_10_to_20: number;
+      inv_margin_above_20: number;
+    }>;
+    sales_order: Array<{
+      month: string;
+      total_so: number;
+      total_so_amount: number;
+      gm_so: number;
+      so_margin_below_10: number;
+      so_margin_10_to_20: number;
+      so_margin_above_20: number;
+    }>;
+  };
+  canChange: boolean;
+  errors: any;
 }
 
 export interface ApiConfig {
@@ -56,12 +74,7 @@ export class DynamicsApiService {
       const data = await response.json();
       console.log('API Response received:', data);
 
-      return {
-        year,
-        salesData: data.salesData || data,
-        targets: data.targets,
-        monthlyData: data.monthlyData || data.monthly
-      };
+      return data;
 
     } catch (error) {
       console.error('Error fetching sales data from API:', error);
