@@ -14,12 +14,12 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   
   const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
   
-  // Find the actual latest month with data from the API response
+  // Find the actual latest month with data from the API response by searching backwards
   let latestMonthData = null;
   let latestMonthIndex = -1;
   
-  // Find the highest month index that exists in the API data
-  for (let i = 0; i < months.length; i++) {
+  // Search backwards through months to find the latest month that exists in the API data
+  for (let i = months.length - 1; i >= 0; i--) {
     const monthKey = months[i];
     const invoiceMonth = invoiceData.find(item => item.month === monthKey);
     const salesOrderMonth = salesOrderData.find(item => item.month === monthKey);
@@ -31,7 +31,8 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
         monthKey: monthKey
       };
       latestMonthIndex = i;
-      break;
+      console.log(`Found latest month: ${monthKey} at index ${i}`);
+      break; // Stop at the first (latest) month found
     }
   }
   
@@ -84,20 +85,21 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   // Transform monthly data from API response
   const monthlyTrend: MonthlyData[] = [];
   
-  // Use the latest month index to determine how many months to show
-  for (let i = 0; i <= latestMonthIndex; i++) {
+  // Generate monthly trend for all months that have data in the API response
+  for (let i = 0; i < months.length; i++) {
     const monthKey = months[i];
     
     // Find data for this month in both invoice and sales order arrays
     const invoiceMonthData = invoiceData.find(item => item.month === monthKey);
     const salesOrderMonthData = salesOrderData.find(item => item.month === monthKey);
     
-    // Combine invoice and sales order data
-    const totalSales = (invoiceMonthData?.total_inv_amount || 0) + (salesOrderMonthData?.total_so_amount || 0);
-    const totalGP = (invoiceMonthData?.gm_inv || 0) + (salesOrderMonthData?.gm_so || 0);
-    const totalOrders = (invoiceMonthData?.total_inv || 0) + (salesOrderMonthData?.total_so || 0);
-    
-    if (totalSales > 0 || totalGP > 0 || totalOrders > 0) {
+    // Only include months that have data
+    if (invoiceMonthData || salesOrderMonthData) {
+      // Combine invoice and sales order data
+      const totalSales = (invoiceMonthData?.total_inv_amount || 0) + (salesOrderMonthData?.total_so_amount || 0);
+      const totalGP = (invoiceMonthData?.gm_inv || 0) + (salesOrderMonthData?.gm_so || 0);
+      const totalOrders = (invoiceMonthData?.total_inv || 0) + (salesOrderMonthData?.total_so || 0);
+      
       monthlyTrend.push({
         month: monthKey.charAt(0).toUpperCase() + monthKey.slice(1), // Capitalize first letter
         sales: totalSales,
