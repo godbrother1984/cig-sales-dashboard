@@ -12,8 +12,65 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   console.log('Invoice data:', invoiceData);
   console.log('Sales order data:', salesOrderData);
   
-  const currentMonth = new Date().getMonth();
   const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  
+  // Find the latest month with data
+  let latestMonthData = null;
+  let latestMonthIndex = -1;
+  
+  // Check from current month backwards to find the latest month with data
+  const currentMonth = new Date().getMonth();
+  for (let i = currentMonth; i >= 0; i--) {
+    const monthKey = months[i];
+    const invoiceMonth = invoiceData.find(item => item.month === monthKey);
+    const salesOrderMonth = salesOrderData.find(item => item.month === monthKey);
+    
+    if (invoiceMonth || salesOrderMonth) {
+      latestMonthData = {
+        invoice: invoiceMonth,
+        salesOrder: salesOrderMonth,
+        monthKey: monthKey
+      };
+      latestMonthIndex = i;
+      break;
+    }
+  }
+  
+  console.log('Latest month data found:', latestMonthData);
+  
+  // Calculate current month totals from the latest available data
+  let currentMonthTotals = {
+    totalSales: 0,
+    totalGP: 0,
+    totalOrders: 0,
+    averageMargin: 0
+  };
+  
+  if (latestMonthData) {
+    const invoiceAmount = latestMonthData.invoice?.total_inv_amount || 0;
+    const salesOrderAmount = latestMonthData.salesOrder?.total_so_amount || 0;
+    const invoiceGP = latestMonthData.invoice?.gm_inv || 0;
+    const salesOrderGP = latestMonthData.salesOrder?.gm_so || 0;
+    const invoiceOrders = latestMonthData.invoice?.total_inv || 0;
+    const salesOrderOrders = latestMonthData.salesOrder?.total_so || 0;
+    
+    currentMonthTotals.totalSales = invoiceAmount + salesOrderAmount;
+    currentMonthTotals.totalGP = invoiceGP + salesOrderGP;
+    currentMonthTotals.totalOrders = invoiceOrders + salesOrderOrders;
+    currentMonthTotals.averageMargin = currentMonthTotals.totalSales > 0 ? 
+      (currentMonthTotals.totalGP / currentMonthTotals.totalSales) * 100 : 0;
+    
+    console.log('Calculated current month totals:', {
+      invoiceAmount,
+      salesOrderAmount,
+      totalSales: currentMonthTotals.totalSales,
+      invoiceGP,
+      salesOrderGP,
+      totalGP: currentMonthTotals.totalGP,
+      totalOrders: currentMonthTotals.totalOrders,
+      averageMargin: currentMonthTotals.averageMargin
+    });
+  }
   
   // Transform monthly data from API response
   const monthlyTrend: MonthlyData[] = [];
@@ -74,23 +131,11 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
     }
   }
 
-  // Get current month data for summary
-  const currentMonthData = monthlyTrend[Math.min(currentMonth, monthlyTrend.length - 1)] || {
-    sales: 0, gp: 0, totalOrders: 0
-  };
-  
-  const currentMonth_: SalesData = {
-    totalSales: currentMonthData.sales,
-    totalGP: currentMonthData.gp,
-    totalOrders: currentMonthData.totalOrders,
-    averageMargin: currentMonthData.sales > 0 ? (currentMonthData.gp / currentMonthData.sales) * 100 : 0
-  };
-
-  // Transform margin bands from current month data
+  // Transform margin bands from the latest month data
   const marginBands: MarginBand[] = [];
-  const currentInvoiceData = invoiceData[Math.min(currentMonth, invoiceData.length - 1)];
   
-  if (currentInvoiceData) {
+  if (latestMonthData?.invoice) {
+    const currentInvoiceData = latestMonthData.invoice;
     const totalValue = currentInvoiceData.total_inv_amount || 0;
     const totalOrders = currentInvoiceData.total_inv || 0;
     
@@ -131,10 +176,14 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
     );
   }
 
-  console.log('Transformed data:', { currentMonth: currentMonth_, marginBands, monthlyTrend });
+  console.log('Final transformed data:', { 
+    currentMonth: currentMonthTotals, 
+    marginBands, 
+    monthlyTrend 
+  });
 
   return {
-    currentMonth: currentMonth_,
+    currentMonth: currentMonthTotals,
     marginBands,
     monthlyTrend
   };
