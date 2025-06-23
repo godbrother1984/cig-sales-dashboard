@@ -1,4 +1,3 @@
-
 export interface ManualOrder {
   id: string;
   orderDate: string;
@@ -37,6 +36,34 @@ export interface MonthlyData {
   totalOrders: number;
   salespeople: Record<string, { sales: number; gp: number; orders: number }>;
   customers: Record<string, { sales: number; gp: number; orders: number }>;
+}
+
+export interface EnhancedTargets {
+  inputMethod: 'monthly' | 'annual';
+  rolloverStrategy: 'none' | 'cumulative' | 'quarterly' | 'redistribute';
+  monthlyTargets: {
+    sales: number[];  // 12 months
+    gp: number[];     // 12 months
+  };
+  annualTargets: {
+    sales: number;
+    gp: number;
+    distribution: 'equal' | 'weighted' | 'custom';
+    weights?: number[]; // for custom distribution
+  };
+}
+
+export interface MonthlyTargetAnalysis {
+  month: number;
+  name: string;
+  salesTarget: number;
+  gpTarget: number;
+  salesActual: number;
+  gpActual: number;
+  salesVariance: number;
+  gpVariance: number;
+  salesAchievement: number;
+  gpAchievement: number;
 }
 
 export interface Targets {
