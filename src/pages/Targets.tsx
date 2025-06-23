@@ -9,6 +9,7 @@ import { MonthlyTargetsInput } from '../components/MonthlyTargetsInput';
 import { AnnualTargetsInput } from '../components/AnnualTargetsInput';
 import { InputMethodConfig } from '../components/InputMethodConfig';
 import { MonthlyPreview } from '../components/MonthlyPreview';
+import { BusinessUnitSelector } from '../components/BusinessUnitSelector';
 import { useTargetsState } from '../hooks/useTargetsState';
 
 const Targets = () => {
@@ -18,12 +19,15 @@ const Targets = () => {
     previewMode,
     setPreviewMode,
     previewTargets,
+    getCurrentTargets,
     handleSalesTargetChange,
     handleGPTargetChange,
     handlePreviewMonthly,
     handleApplyPreview,
     handleSave
   } = useTargetsState();
+
+  const currentTargets = getCurrentTargets();
 
   return (
     <TooltipProvider>
@@ -40,7 +44,7 @@ const Targets = () => {
               </Link>
               <div>
                 <h1 className="text-3xl font-bold text-foreground">Enhanced Target Management</h1>
-                <p className="text-muted-foreground">Set flexible targets with rollover strategies</p>
+                <p className="text-muted-foreground">Set flexible targets with rollover strategies by Business Unit</p>
               </div>
             </div>
           </div>
@@ -49,6 +53,19 @@ const Targets = () => {
         <div className="container mx-auto px-6 py-6">
           <div className="max-w-6xl mx-auto space-y-6">
             
+            <BusinessUnitSelector
+              globalTargets={targets.globalTargets}
+              selectedBusinessUnit={targets.selectedBusinessUnit}
+              onGlobalTargetsChange={(global) => setTargets(prev => ({ 
+                ...prev, 
+                globalTargets: global 
+              }))}
+              onBusinessUnitChange={(unit) => setTargets(prev => ({ 
+                ...prev, 
+                selectedBusinessUnit: unit 
+              }))}
+            />
+
             <InputMethodConfig
               inputMethod={targets.inputMethod}
               rolloverStrategy={targets.rolloverStrategy}
@@ -67,8 +84,8 @@ const Targets = () => {
               <TabsContent value="monthly" className="space-y-6">
                 {!previewMode ? (
                   <MonthlyTargetsInput
-                    salesTargets={targets.monthlyTargets.sales}
-                    gpTargets={targets.monthlyTargets.gp}
+                    salesTargets={currentTargets.monthlyTargets.sales}
+                    gpTargets={currentTargets.monthlyTargets.gp}
                     onSalesTargetChange={handleSalesTargetChange}
                     onGPTargetChange={handleGPTargetChange}
                   />
@@ -77,7 +94,10 @@ const Targets = () => {
                     <MonthlyPreview
                       previewTargets={previewTargets}
                       onApplyPreview={handleApplyPreview}
-                      onCancelPreview={() => setPreviewMode(false)}
+                      onCancelPreview={() => {
+                        console.log('Canceling preview'); // Debug log
+                        setPreviewMode(false);
+                      }}
                     />
                   )
                 )}
@@ -85,26 +105,26 @@ const Targets = () => {
               
               <TabsContent value="annual" className="space-y-6">
                 <AnnualTargetsInput
-                  annualSales={targets.annualTargets.sales}
-                  annualGP={targets.annualTargets.gp}
-                  distribution={targets.annualTargets.distribution}
-                  weights={targets.annualTargets.weights}
-                  onAnnualSalesChange={(value) => setTargets(prev => ({
-                    ...prev,
-                    annualTargets: { ...prev.annualTargets, sales: value }
-                  }))}
-                  onAnnualGPChange={(value) => setTargets(prev => ({
-                    ...prev,
-                    annualTargets: { ...prev.annualTargets, gp: value }
-                  }))}
-                  onDistributionChange={(distribution) => setTargets(prev => ({
-                    ...prev,
-                    annualTargets: { ...prev.annualTargets, distribution }
-                  }))}
-                  onWeightsChange={(weights) => setTargets(prev => ({
-                    ...prev,
-                    annualTargets: { ...prev.annualTargets, weights }
-                  }))}
+                  annualSales={currentTargets.annualTargets.sales}
+                  annualGP={currentTargets.annualTargets.gp}
+                  distribution={currentTargets.annualTargets.distribution}
+                  weights={currentTargets.annualTargets.weights}
+                  onAnnualSalesChange={(value) => {
+                    const newAnnualTargets = { ...currentTargets.annualTargets, sales: value };
+                    updateCurrentTargets({ annualTargets: newAnnualTargets });
+                  }}
+                  onAnnualGPChange={(value) => {
+                    const newAnnualTargets = { ...currentTargets.annualTargets, gp: value };
+                    updateCurrentTargets({ annualTargets: newAnnualTargets });
+                  }}
+                  onDistributionChange={(distribution) => {
+                    const newAnnualTargets = { ...currentTargets.annualTargets, distribution };
+                    updateCurrentTargets({ annualTargets: newAnnualTargets });
+                  }}
+                  onWeightsChange={(weights) => {
+                    const newAnnualTargets = { ...currentTargets.annualTargets, weights };
+                    updateCurrentTargets({ annualTargets: newAnnualTargets });
+                  }}
                   onPreviewMonthly={handlePreviewMonthly}
                 />
               </TabsContent>
@@ -122,6 +142,23 @@ const Targets = () => {
       </div>
     </TooltipProvider>
   );
+
+  function updateCurrentTargets(updates: any) {
+    if (targets.globalTargets) {
+      setTargets(prev => ({ ...prev, ...updates }));
+    } else {
+      setTargets(prev => ({
+        ...prev,
+        businessUnitTargets: {
+          ...prev.businessUnitTargets,
+          [prev.selectedBusinessUnit]: {
+            ...prev.businessUnitTargets[prev.selectedBusinessUnit],
+            ...updates
+          }
+        }
+      }));
+    }
+  }
 };
 
 export default Targets;

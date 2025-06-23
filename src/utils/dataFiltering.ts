@@ -22,13 +22,13 @@ export const filterManualOrders = (
       dateMatch = orderMonth === currentMonth;
     }
     
-    const productGroupMatch = filters.productGroup === 'all' || 
-      order.productGroup === filters.productGroup;
+    const businessUnitMatch = filters.businessUnit === 'all' || 
+      order.businessUnit === filters.businessUnit;
     const customerMatch = filters.customerName === 'all' || 
       order.customerName === filters.customerName;
     const salespersonMatch = filters.salesperson === 'all' || 
       order.salesperson === filters.salesperson;
     
-    return dateMatch && productGroupMatch && customerMatch && salespersonMatch;
+    return dateMatch && businessUnitMatch && customerMatch && salespersonMatch;
   });
 };

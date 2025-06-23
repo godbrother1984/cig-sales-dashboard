@@ -6,7 +6,7 @@ export interface SalesOrderData {
   orderId: string;
   orderDate: string;
   customerName: string;
-  productGroup: string;
+  businessUnit: string;
   orderValue: number; // in THB
   grossMargin: number; // percentage
   grossProfit: number; // in THB
@@ -34,7 +34,7 @@ export class MSDataService {
   async fetchSalesOrders(filters?: {
     startDate?: string;
     endDate?: string;
-    productGroup?: string;
+    businessUnit?: string;
     customerName?: string;
     salesperson?: string;
   }): Promise<SalesOrderData[]> {
@@ -48,8 +48,8 @@ export class MSDataService {
         filter += ` and CreatedOn le ${filters.endDate}`;
       }
       
-      if (filters?.productGroup && filters.productGroup !== 'all') {
-        filter += ` and ProductGroup eq '${filters.productGroup}'`;
+      if (filters?.businessUnit && filters.businessUnit !== 'all') {
+        filter += ` and BusinessUnit eq '${filters.businessUnit}'`;
       }
       
       if (filters?.customerName && filters.customerName !== 'all') {
@@ -61,7 +61,7 @@ export class MSDataService {
       }
 
       queryParams.append('$filter', filter);
-      queryParams.append('$select', 'SalesId,CreatedOn,CustomerName,ProductGroup,TotalAmount,GrossMargin,GrossProfit,SalesPerson,Status');
+      queryParams.append('$select', 'SalesId,CreatedOn,CustomerName,BusinessUnit,TotalAmount,GrossMargin,GrossProfit,SalesPerson,Status');
 
       // Example API endpoint for MS Dynamics 365
       // Replace with your actual endpoint
@@ -84,7 +84,7 @@ export class MSDataService {
         orderId: order.SalesId,
         orderDate: order.CreatedOn,
         customerName: order.CustomerName,
-        productGroup: order.ProductGroup,
+        businessUnit: order.BusinessUnit,
         orderValue: order.TotalAmount,
         grossMargin: order.GrossMargin,
         grossProfit: order.GrossProfit,
@@ -138,7 +138,7 @@ export const MSDataIntegrationGuide = () => {
               <li>SalesId (Primary Key)</li>
               <li>CreatedOn (DateTime)</li>
               <li>CustomerName (Text)</li>
-              <li>ProductGroup (Text)</li>
+              <li>BusinessUnit (Text)</li>
               <li>TotalAmount (Decimal)</li>
               <li>GrossMargin (Decimal - Percentage)</li>
               <li>GrossProfit (Decimal)</li>
@@ -162,7 +162,7 @@ export const MSDataIntegrationGuide = () => {
           <ul className="list-disc list-inside text-sm">
             <li>Read access to Sales Orders</li>
             <li>Read access to Customer Master</li>
-            <li>Read access to Product Groups</li>
+            <li>Read access to Business Units</li>
             <li>Read access to Sales Targets (if applicable)</li>
           </ul>
         </div>

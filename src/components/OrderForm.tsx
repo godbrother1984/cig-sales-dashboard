@@ -49,17 +49,19 @@ export const OrderForm: React.FC<OrderFormProps> = ({
           </div>
           
           <div className="space-y-2">
-            <Label>Product Group</Label>
+            <Label>Business Unit</Label>
             <Select 
-              value={currentOrder.productGroup} 
-              onValueChange={(value) => onInputChange('productGroup', value)}
+              value={currentOrder.businessUnit} 
+              onValueChange={(value) => onInputChange('businessUnit', value)}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="HBPM">HBPM</SelectItem>
-                <SelectItem value="M&E">M&E</SelectItem>
+                <SelectItem value="Corporate">Corporate</SelectItem>
+                <SelectItem value="Retail">Retail</SelectItem>
+                <SelectItem value="Manufacturing">Manufacturing</SelectItem>
+                <SelectItem value="Services">Services</SelectItem>
               </SelectContent>
             </Select>
           </div>

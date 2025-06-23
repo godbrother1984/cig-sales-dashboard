@@ -6,7 +6,7 @@ import { Filter } from 'lucide-react';
 
 interface DashboardFiltersProps {
   filters: {
-    productGroup: string;
+    businessUnit: string;
     customerName: string;
     salesperson: string;
   };
@@ -14,7 +14,7 @@ interface DashboardFiltersProps {
 }
 
 export const DashboardFilters: React.FC<DashboardFiltersProps> = ({ filters, onFilterChange }) => {
-  const productGroups = ['All', 'HBPM', 'M&E', 'CTPL', 'OEM', 'Replacement', 'Units', 'Others'];
+  const businessUnits = ['All', 'Corporate', 'Retail', 'Manufacturing', 'Services'];
   const customers = ['All', 'Toyota Motor Thailand', 'Honda Automobile Thailand', 'Isuzu Motors'];
   const salespeople = ['All', 'John Smith', 'Sarah Johnson', 'Mike Chen'];
 
@@ -35,17 +35,17 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({ filters, onF
           </div>
           
           <div className="flex items-center gap-2">
-            <label className="text-sm text-muted-foreground">Product Group:</label>
+            <label className="text-sm text-muted-foreground">Business Unit:</label>
             <Select 
-              value={filters.productGroup === 'all' ? 'All' : filters.productGroup} 
-              onValueChange={(value) => handleFilterChange('productGroup', value)}
+              value={filters.businessUnit === 'all' ? 'All' : filters.businessUnit} 
+              onValueChange={(value) => handleFilterChange('businessUnit', value)}
             >
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {productGroups.map(group => (
-                  <SelectItem key={group} value={group}>{group}</SelectItem>
+                {businessUnits.map(unit => (
+                  <SelectItem key={unit} value={unit}>{unit}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

@@ -1,8 +1,9 @@
+
 export interface ManualOrder {
   id: string;
   orderDate: string;
   customerName: string;
-  productGroup: 'HBPM' | 'M&E';
+  businessUnit: 'Corporate' | 'Retail' | 'Manufacturing' | 'Services';
   orderValue: number;
   grossMargin: number;
   grossProfit: number;
@@ -38,18 +39,37 @@ export interface MonthlyData {
   customers: Record<string, { sales: number; gp: number; orders: number }>;
 }
 
+export interface BUTargets {
+  [businessUnit: string]: {
+    monthlyTargets: {
+      sales: number[];
+      gp: number[];
+    };
+    annualTargets: {
+      sales: number;
+      gp: number;
+      distribution: 'equal' | 'weighted' | 'custom';
+      weights?: number[];
+    };
+  };
+}
+
 export interface EnhancedTargets {
   inputMethod: 'monthly' | 'annual';
   rolloverStrategy: 'none' | 'cumulative' | 'quarterly' | 'redistribute';
+  globalTargets: boolean; // true = single target, false = per-BU
+  businessUnitTargets: BUTargets;
+  selectedBusinessUnit: string;
+  // Legacy fields for backward compatibility
   monthlyTargets: {
-    sales: number[];  // 12 months
-    gp: number[];     // 12 months
+    sales: number[];
+    gp: number[];
   };
   annualTargets: {
     sales: number;
     gp: number;
     distribution: 'equal' | 'weighted' | 'custom';
-    weights?: number[]; // for custom distribution
+    weights?: number[];
   };
 }
 
@@ -76,7 +96,7 @@ export interface Targets {
 }
 
 export interface DashboardFilters {
-  productGroup: string;
+  businessUnit: string;
   customerName: string;
   salesperson: string;
 }
