@@ -40,23 +40,27 @@ export const AnnualTargetsInput: React.FC<AnnualTargetsInputProps> = ({
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="annualSales">Annual Sales Target (THB)</Label>
+            <Label htmlFor="annualSales">Annual Sales Target (Million THB)</Label>
             <Input
               id="annualSales"
               type="number"
-              value={annualSales}
-              onChange={(e) => onAnnualSalesChange(parseFloat(e.target.value) || 0)}
-              placeholder="38,400,000"
+              step="0.01"
+              min="0"
+              value={annualSales / 1000000}
+              onChange={(e) => onAnnualSalesChange((parseFloat(e.target.value) || 0) * 1000000)}
+              placeholder="38.4"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="annualGP">Annual GP Target (THB)</Label>
+            <Label htmlFor="annualGP">Annual GP Target (Million THB)</Label>
             <Input
               id="annualGP"
               type="number"
-              value={annualGP}
-              onChange={(e) => onAnnualGPChange(parseFloat(e.target.value) || 0)}
-              placeholder="9,600,000"
+              step="0.01"
+              min="0"
+              value={annualGP / 1000000}
+              onChange={(e) => onAnnualGPChange((parseFloat(e.target.value) || 0) * 1000000)}
+              placeholder="9.6"
             />
           </div>
         </div>
@@ -84,6 +88,8 @@ export const AnnualTargetsInput: React.FC<AnnualTargetsInputProps> = ({
                   <Label className="text-xs">{month}</Label>
                   <Input
                     type="number"
+                    step="0.1"
+                    min="0"
                     value={weights[index]}
                     onChange={(e) => {
                       const newWeights = [...weights];
@@ -91,7 +97,6 @@ export const AnnualTargetsInput: React.FC<AnnualTargetsInputProps> = ({
                       onWeightsChange(newWeights);
                     }}
                     className="text-xs"
-                    step="0.1"
                   />
                 </div>
               ))}

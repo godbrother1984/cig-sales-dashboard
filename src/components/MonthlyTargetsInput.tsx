@@ -33,26 +33,32 @@ export const MonthlyTargetsInput: React.FC<MonthlyTargetsInputProps> = ({
               <div className="space-y-2">
                 <div>
                   <Label htmlFor={`sales-${index}`} className="text-xs text-muted-foreground">
-                    Sales Target (THB)
+                    Sales Target (Million THB)
                   </Label>
                   <Input
                     id={`sales-${index}`}
                     type="number"
-                    value={salesTargets[index] || 0}
-                    onChange={(e) => onSalesTargetChange(index, parseFloat(e.target.value) || 0)}
+                    step="0.01"
+                    min="0"
+                    value={(salesTargets[index] || 0) / 1000000}
+                    onChange={(e) => onSalesTargetChange(index, (parseFloat(e.target.value) || 0) * 1000000)}
                     className="text-sm"
+                    placeholder="3.2"
                   />
                 </div>
                 <div>
                   <Label htmlFor={`gp-${index}`} className="text-xs text-muted-foreground">
-                    GP Target (THB)
+                    GP Target (Million THB)
                   </Label>
                   <Input
                     id={`gp-${index}`}
                     type="number"
-                    value={gpTargets[index] || 0}
-                    onChange={(e) => onGPTargetChange(index, parseFloat(e.target.value) || 0)}
+                    step="0.01"
+                    min="0"
+                    value={(gpTargets[index] || 0) / 1000000}
+                    onChange={(e) => onGPTargetChange(index, (parseFloat(e.target.value) || 0) * 1000000)}
                     className="text-sm"
+                    placeholder="0.8"
                   />
                 </div>
               </div>
