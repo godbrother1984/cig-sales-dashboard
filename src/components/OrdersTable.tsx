@@ -26,7 +26,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ orders, onRemoveOrder 
                 <tr className="border-b">
                   <th className="text-left p-2">Date</th>
                   <th className="text-left p-2">Customer</th>
-                  <th className="text-left p-2">Product Group</th>
+                  <th className="text-left p-2">Business Unit</th>
                   <th className="text-right p-2">Order Value</th>
                   <th className="text-right p-2">Margin %</th>
                   <th className="text-right p-2">Gross Profit</th>
@@ -39,7 +39,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ orders, onRemoveOrder 
                   <tr key={order.id} className="border-b">
                     <td className="p-2">{order.orderDate}</td>
                     <td className="p-2">{order.customerName}</td>
-                    <td className="p-2">{order.productGroup}</td>
+                    <td className="p-2">{order.businessUnit}</td>
                     <td className="p-2 text-right">฿{order.orderValue.toLocaleString()}</td>
                     <td className="p-2 text-right">{order.grossMargin.toFixed(1)}%</td>
                     <td className="p-2 text-right">฿{order.grossProfit.toLocaleString()}</td>

@@ -27,7 +27,7 @@ const Index = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [viewMode, setViewMode] = useState('monthly');
   const [filters, setFilters] = useState<DashboardFiltersType>({
-    productGroup: 'all',
+    businessUnit: 'all',
     customerName: 'all',
     salesperson: 'all'
   });

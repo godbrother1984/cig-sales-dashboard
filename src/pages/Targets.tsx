@@ -29,6 +29,23 @@ const Targets = () => {
 
   const currentTargets = getCurrentTargets();
 
+  const updateCurrentTargets = (updates: any) => {
+    if (targets.globalTargets) {
+      setTargets(prev => ({ ...prev, ...updates }));
+    } else {
+      setTargets(prev => ({
+        ...prev,
+        businessUnitTargets: {
+          ...prev.businessUnitTargets,
+          [prev.selectedBusinessUnit]: {
+            ...prev.businessUnitTargets[prev.selectedBusinessUnit],
+            ...updates
+          }
+        }
+      }));
+    }
+  };
+
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-background">
@@ -108,7 +125,7 @@ const Targets = () => {
                   annualSales={currentTargets.annualTargets.sales}
                   annualGP={currentTargets.annualTargets.gp}
                   distribution={currentTargets.annualTargets.distribution}
-                  weights={currentTargets.annualTargets.weights}
+                  weights={currentTargets.annualTargets.weights || []}
                   onAnnualSalesChange={(value) => {
                     const newAnnualTargets = { ...currentTargets.annualTargets, sales: value };
                     updateCurrentTargets({ annualTargets: newAnnualTargets });
@@ -142,23 +159,6 @@ const Targets = () => {
       </div>
     </TooltipProvider>
   );
-
-  function updateCurrentTargets(updates: any) {
-    if (targets.globalTargets) {
-      setTargets(prev => ({ ...prev, ...updates }));
-    } else {
-      setTargets(prev => ({
-        ...prev,
-        businessUnitTargets: {
-          ...prev.businessUnitTargets,
-          [prev.selectedBusinessUnit]: {
-            ...prev.businessUnitTargets[prev.selectedBusinessUnit],
-            ...updates
-          }
-        }
-      }));
-    }
-  }
 };
 
 export default Targets;
