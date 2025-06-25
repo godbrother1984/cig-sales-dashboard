@@ -13,21 +13,21 @@ export const useTargetsState = () => {
     inputMethod: 'monthly',
     rolloverStrategy: 'none',
     globalTargets: true,
-    selectedBusinessUnit: 'Corporate',
+    selectedBusinessUnit: 'Coils',
     businessUnitTargets: {
-      Corporate: {
+      Coils: {
         monthlyTargets: { sales: Array(12).fill(3200000), gp: Array(12).fill(800000) },
         annualTargets: { sales: 38400000, gp: 9600000, distribution: 'equal' }
       },
-      Retail: {
+      Units: {
         monthlyTargets: { sales: Array(12).fill(2800000), gp: Array(12).fill(700000) },
         annualTargets: { sales: 33600000, gp: 8400000, distribution: 'equal' }
       },
-      Manufacturing: {
+      'M&E': {
         monthlyTargets: { sales: Array(12).fill(4000000), gp: Array(12).fill(1000000) },
         annualTargets: { sales: 48000000, gp: 12000000, distribution: 'equal' }
       },
-      Services: {
+      HBPM: {
         monthlyTargets: { sales: Array(12).fill(1800000), gp: Array(12).fill(450000) },
         annualTargets: { sales: 21600000, gp: 5400000, distribution: 'equal' }
       }
@@ -50,17 +50,39 @@ export const useTargetsState = () => {
     const savedTargets = localStorage.getItem('enhancedSalesTargets');
     if (savedTargets) {
       const parsed = JSON.parse(savedTargets);
-      // Migration logic for old format
+      // Migration logic for old format and old business unit names
       if (!parsed.businessUnitTargets) {
         parsed.globalTargets = true;
-        parsed.selectedBusinessUnit = 'Corporate';
+        parsed.selectedBusinessUnit = 'Coils';
         parsed.businessUnitTargets = {
-          Corporate: {
+          Coils: {
             monthlyTargets: parsed.monthlyTargets || { sales: Array(12).fill(3200000), gp: Array(12).fill(800000) },
             annualTargets: parsed.annualTargets || { sales: 38400000, gp: 9600000, distribution: 'equal' }
           }
         };
       }
+      
+      // Migration from old business unit names to new ones
+      const oldToNewMapping = {
+        'Corporate': 'Coils',
+        'Retail': 'Units',
+        'Manufacturing': 'M&E',
+        'Services': 'HBPM'
+      };
+      
+      if (parsed.businessUnitTargets) {
+        const newBusinessUnitTargets: any = {};
+        Object.keys(parsed.businessUnitTargets).forEach(oldKey => {
+          const newKey = oldToNewMapping[oldKey as keyof typeof oldToNewMapping] || oldKey;
+          newBusinessUnitTargets[newKey] = parsed.businessUnitTargets[oldKey];
+        });
+        parsed.businessUnitTargets = newBusinessUnitTargets;
+      }
+      
+      if (parsed.selectedBusinessUnit && oldToNewMapping[parsed.selectedBusinessUnit as keyof typeof oldToNewMapping]) {
+        parsed.selectedBusinessUnit = oldToNewMapping[parsed.selectedBusinessUnit as keyof typeof oldToNewMapping];
+      }
+      
       setTargets(parsed);
     }
   }, []);

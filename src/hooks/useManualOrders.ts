@@ -9,7 +9,7 @@ export const useManualOrders = () => {
   const [currentOrder, setCurrentOrder] = useState<Partial<ManualOrder>>({
     orderDate: new Date().toISOString().split('T')[0],
     customerName: '',
-    businessUnit: 'Corporate',
+    businessUnit: 'Coils',
     orderValue: 0,
     grossMargin: 0,
     grossProfit: 0,
@@ -45,7 +45,7 @@ export const useManualOrders = () => {
       setCurrentOrder({
         orderDate: new Date().toISOString().split('T')[0],
         customerName: '',
-        businessUnit: 'Corporate',
+        businessUnit: 'Coils',
         orderValue: 0,
         grossMargin: 0,
         grossProfit: 0,

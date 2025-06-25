@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Label } from './ui/label';
@@ -13,7 +12,7 @@ interface BusinessUnitSelectorProps {
   onBusinessUnitChange: (unit: string) => void;
 }
 
-const businessUnits = ['Corporate', 'Retail', 'Manufacturing', 'Services'];
+const businessUnits = ['Coils', 'Units', 'M&E', 'HBPM'];
 
 export const BusinessUnitSelector: React.FC<BusinessUnitSelectorProps> = ({
   globalTargets,

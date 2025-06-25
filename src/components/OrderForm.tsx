@@ -58,10 +58,10 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Corporate">Corporate</SelectItem>
-                <SelectItem value="Retail">Retail</SelectItem>
-                <SelectItem value="Manufacturing">Manufacturing</SelectItem>
-                <SelectItem value="Services">Services</SelectItem>
+                <SelectItem value="Coils">Coils</SelectItem>
+                <SelectItem value="Units">Units</SelectItem>
+                <SelectItem value="M&E">M&E</SelectItem>
+                <SelectItem value="HBPM">HBPM</SelectItem>
               </SelectContent>
             </Select>
           </div>

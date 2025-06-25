@@ -3,7 +3,7 @@ export interface ManualOrder {
   id: string;
   orderDate: string;
   customerName: string;
-  businessUnit: 'Corporate' | 'Retail' | 'Manufacturing' | 'Services';
+  businessUnit: 'Coils' | 'Units' | 'M&E' | 'HBPM';
   orderValue: number;
   grossMargin: number;
   grossProfit: number;
