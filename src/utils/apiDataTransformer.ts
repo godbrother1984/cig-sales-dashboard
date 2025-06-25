@@ -1,6 +1,18 @@
-
 import { SalesData, MarginBand, MonthlyData } from '../types';
 import { DynamicsApiResponse } from '../services/dynamicsApiService';
+
+// Business unit mapping from API to application format
+const mapBusinessUnit = (apiBusinessUnit: string): string => {
+  const businessUnitMapping: { [key: string]: string } = {
+    'Coil': 'Coil',
+    'Coil(Unit)': 'Unit',
+    'M&E': 'M&E',
+    'HBPM': 'HBPM',
+    'MKT': 'MKT'
+  };
+  
+  return businessUnitMapping[apiBusinessUnit] || apiBusinessUnit;
+};
 
 export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) => {
   console.log('Transforming API data:', apiData);

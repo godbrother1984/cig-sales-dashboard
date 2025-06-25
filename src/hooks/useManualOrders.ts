@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from './use-toast';
 import { ManualOrder } from '../types';
@@ -9,7 +8,7 @@ export const useManualOrders = () => {
   const [currentOrder, setCurrentOrder] = useState<Partial<ManualOrder>>({
     orderDate: new Date().toISOString().split('T')[0],
     customerName: '',
-    businessUnit: 'Coils',
+    businessUnit: 'Coil',
     orderValue: 0,
     grossMargin: 0,
     grossProfit: 0,
@@ -45,7 +44,7 @@ export const useManualOrders = () => {
       setCurrentOrder({
         orderDate: new Date().toISOString().split('T')[0],
         customerName: '',
-        businessUnit: 'Coils',
+        businessUnit: 'Coil',
         orderValue: 0,
         grossMargin: 0,
         grossProfit: 0,

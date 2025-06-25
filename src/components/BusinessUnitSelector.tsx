@@ -12,7 +12,7 @@ interface BusinessUnitSelectorProps {
   onBusinessUnitChange: (unit: string) => void;
 }
 
-const businessUnits = ['Coils', 'Units', 'M&E', 'HBPM'];
+const businessUnits = ['Coil', 'Unit', 'M&E', 'HBPM', 'MKT'];
 
 export const BusinessUnitSelector: React.FC<BusinessUnitSelectorProps> = ({
   globalTargets,

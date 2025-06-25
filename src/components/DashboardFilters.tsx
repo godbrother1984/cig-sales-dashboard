@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -14,7 +13,7 @@ interface DashboardFiltersProps {
 }
 
 export const DashboardFilters: React.FC<DashboardFiltersProps> = ({ filters, onFilterChange }) => {
-  const businessUnits = ['All', 'Coils', 'Units', 'M&E', 'HBPM'];
+  const businessUnits = ['All', 'Coil', 'Unit', 'M&E', 'HBPM', 'MKT'];
   const customers = ['All', 'Toyota Motor Thailand', 'Honda Automobile Thailand', 'Isuzu Motors'];
   const salespeople = ['All', 'John Smith', 'Sarah Johnson', 'Mike Chen'];
 

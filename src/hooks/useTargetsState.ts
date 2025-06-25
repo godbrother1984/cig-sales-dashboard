@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from './use-toast';
@@ -13,13 +12,13 @@ export const useTargetsState = () => {
     inputMethod: 'monthly',
     rolloverStrategy: 'none',
     globalTargets: true,
-    selectedBusinessUnit: 'Coils',
+    selectedBusinessUnit: 'Coil',
     businessUnitTargets: {
-      Coils: {
+      Coil: {
         monthlyTargets: { sales: Array(12).fill(3200000), gp: Array(12).fill(800000) },
         annualTargets: { sales: 38400000, gp: 9600000, distribution: 'equal' }
       },
-      Units: {
+      Unit: {
         monthlyTargets: { sales: Array(12).fill(2800000), gp: Array(12).fill(700000) },
         annualTargets: { sales: 33600000, gp: 8400000, distribution: 'equal' }
       },
@@ -30,6 +29,10 @@ export const useTargetsState = () => {
       HBPM: {
         monthlyTargets: { sales: Array(12).fill(1800000), gp: Array(12).fill(450000) },
         annualTargets: { sales: 21600000, gp: 5400000, distribution: 'equal' }
+      },
+      MKT: {
+        monthlyTargets: { sales: Array(12).fill(2000000), gp: Array(12).fill(500000) },
+        annualTargets: { sales: 24000000, gp: 6000000, distribution: 'equal' }
       }
     },
     monthlyTargets: {
@@ -50,12 +53,12 @@ export const useTargetsState = () => {
     const savedTargets = localStorage.getItem('enhancedSalesTargets');
     if (savedTargets) {
       const parsed = JSON.parse(savedTargets);
-      // Migration logic for old format and old business unit names
+      // Migration logic for business unit names
       if (!parsed.businessUnitTargets) {
         parsed.globalTargets = true;
-        parsed.selectedBusinessUnit = 'Coils';
+        parsed.selectedBusinessUnit = 'Coil';
         parsed.businessUnitTargets = {
-          Coils: {
+          Coil: {
             monthlyTargets: parsed.monthlyTargets || { sales: Array(12).fill(3200000), gp: Array(12).fill(800000) },
             annualTargets: parsed.annualTargets || { sales: 38400000, gp: 9600000, distribution: 'equal' }
           }
@@ -64,8 +67,10 @@ export const useTargetsState = () => {
       
       // Migration from old business unit names to new ones
       const oldToNewMapping = {
-        'Corporate': 'Coils',
-        'Retail': 'Units',
+        'Coils': 'Coil',
+        'Units': 'Unit',
+        'Corporate': 'Coil',
+        'Retail': 'Unit',
         'Manufacturing': 'M&E',
         'Services': 'HBPM'
       };
@@ -76,6 +81,15 @@ export const useTargetsState = () => {
           const newKey = oldToNewMapping[oldKey as keyof typeof oldToNewMapping] || oldKey;
           newBusinessUnitTargets[newKey] = parsed.businessUnitTargets[oldKey];
         });
+        
+        // Add MKT if it doesn't exist
+        if (!newBusinessUnitTargets.MKT) {
+          newBusinessUnitTargets.MKT = {
+            monthlyTargets: { sales: Array(12).fill(2000000), gp: Array(12).fill(500000) },
+            annualTargets: { sales: 24000000, gp: 6000000, distribution: 'equal' }
+          };
+        }
+        
         parsed.businessUnitTargets = newBusinessUnitTargets;
       }
       
@@ -141,9 +155,9 @@ export const useTargetsState = () => {
   };
 
   const handlePreviewMonthly = () => {
-    console.log('Preview Monthly called'); // Debug log
+    console.log('Preview Monthly called');
     const currentTargets = getCurrentTargets();
-    console.log('Current targets for preview:', currentTargets); // Debug log
+    console.log('Current targets for preview:', currentTargets);
     
     const weights = ('weights' in currentTargets.annualTargets) ? currentTargets.annualTargets.weights || [] : [];
     
@@ -154,10 +168,10 @@ export const useTargetsState = () => {
       weights
     );
     
-    console.log('Generated preview:', preview); // Debug log
+    console.log('Generated preview:', preview);
     setPreviewTargets(preview);
     setPreviewMode(true);
-    console.log('Preview mode set to true'); // Debug log
+    console.log('Preview mode set to true');
   };
 
   const handleApplyPreview = () => {

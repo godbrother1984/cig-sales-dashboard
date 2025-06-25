@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -58,10 +57,11 @@ export const OrderForm: React.FC<OrderFormProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Coils">Coils</SelectItem>
-                <SelectItem value="Units">Units</SelectItem>
+                <SelectItem value="Coil">Coil</SelectItem>
+                <SelectItem value="Unit">Unit</SelectItem>
                 <SelectItem value="M&E">M&E</SelectItem>
                 <SelectItem value="HBPM">HBPM</SelectItem>
+                <SelectItem value="MKT">MKT</SelectItem>
               </SelectContent>
             </Select>
           </div>
