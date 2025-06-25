@@ -123,11 +123,13 @@ export const useTargetsState = () => {
     const currentTargets = getCurrentTargets();
     console.log('Current targets for preview:', currentTargets); // Debug log
     
+    const weights = ('weights' in currentTargets.annualTargets) ? currentTargets.annualTargets.weights || [] : [];
+    
     const preview = calculateMonthlyTargetsFromAnnual(
       currentTargets.annualTargets.sales,
       currentTargets.annualTargets.gp,
       currentTargets.annualTargets.distribution,
-      currentTargets.annualTargets.weights || []
+      weights
     );
     
     console.log('Generated preview:', preview); // Debug log
