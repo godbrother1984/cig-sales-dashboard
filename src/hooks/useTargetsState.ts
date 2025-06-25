@@ -127,7 +127,7 @@ export const useTargetsState = () => {
       currentTargets.annualTargets.sales,
       currentTargets.annualTargets.gp,
       currentTargets.annualTargets.distribution,
-      currentTargets.annualTargets.weights
+      currentTargets.annualTargets.weights || []
     );
     
     console.log('Generated preview:', preview); // Debug log

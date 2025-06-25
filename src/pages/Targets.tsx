@@ -125,7 +125,7 @@ const Targets = () => {
                   annualSales={currentTargets.annualTargets.sales}
                   annualGP={currentTargets.annualTargets.gp}
                   distribution={currentTargets.annualTargets.distribution}
-                  weights={currentTargets.annualTargets.weights || []}
+                  weights={('weights' in currentTargets.annualTargets) ? currentTargets.annualTargets.weights || [] : []}
                   onAnnualSalesChange={(value) => {
                     const newAnnualTargets = { ...currentTargets.annualTargets, sales: value };
                     updateCurrentTargets({ annualTargets: newAnnualTargets });
