@@ -82,19 +82,35 @@ export const useTargetsState = () => {
           newBusinessUnitTargets[newKey] = parsed.businessUnitTargets[oldKey];
         });
         
-        // Add MKT if it doesn't exist
-        if (!newBusinessUnitTargets.MKT) {
-          newBusinessUnitTargets.MKT = {
-            monthlyTargets: { sales: Array(12).fill(2000000), gp: Array(12).fill(500000) },
-            annualTargets: { sales: 24000000, gp: 6000000, distribution: 'equal' }
-          };
-        }
+        // Ensure all new business units exist
+        const requiredBUs = ['Coil', 'Unit', 'M&E', 'HBPM', 'MKT'];
+        requiredBUs.forEach(bu => {
+          if (!newBusinessUnitTargets[bu]) {
+            const defaultTargets = {
+              Coil: { sales: Array(12).fill(3200000), gp: Array(12).fill(800000), annualSales: 38400000, annualGp: 9600000 },
+              Unit: { sales: Array(12).fill(2800000), gp: Array(12).fill(700000), annualSales: 33600000, annualGp: 8400000 },
+              'M&E': { sales: Array(12).fill(4000000), gp: Array(12).fill(1000000), annualSales: 48000000, annualGp: 12000000 },
+              HBPM: { sales: Array(12).fill(1800000), gp: Array(12).fill(450000), annualSales: 21600000, annualGp: 5400000 },
+              MKT: { sales: Array(12).fill(2000000), gp: Array(12).fill(500000), annualSales: 24000000, annualGp: 6000000 }
+            }[bu] || { sales: Array(12).fill(2000000), gp: Array(12).fill(500000), annualSales: 24000000, annualGp: 6000000 };
+            
+            newBusinessUnitTargets[bu] = {
+              monthlyTargets: { sales: defaultTargets.sales, gp: defaultTargets.gp },
+              annualTargets: { sales: defaultTargets.annualSales, gp: defaultTargets.annualGp, distribution: 'equal' }
+            };
+          }
+        });
         
         parsed.businessUnitTargets = newBusinessUnitTargets;
       }
       
       if (parsed.selectedBusinessUnit && oldToNewMapping[parsed.selectedBusinessUnit as keyof typeof oldToNewMapping]) {
         parsed.selectedBusinessUnit = oldToNewMapping[parsed.selectedBusinessUnit as keyof typeof oldToNewMapping];
+      }
+      
+      // Ensure selectedBusinessUnit is valid
+      if (!['Coil', 'Unit', 'M&E', 'HBPM', 'MKT'].includes(parsed.selectedBusinessUnit)) {
+        parsed.selectedBusinessUnit = 'Coil';
       }
       
       setTargets(parsed);

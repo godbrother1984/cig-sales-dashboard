@@ -1,4 +1,3 @@
-
 export interface ManualOrder {
   id: string;
   orderDate: string;
