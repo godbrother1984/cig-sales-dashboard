@@ -11,16 +11,36 @@ export const combineDataWithManualOrders = (
   viewMode: string,
   targets: any
 ) => {
+  console.log('=== COMBINING DATA WITH MANUAL ORDERS ===');
+  console.log('Business unit filter:', filters.businessUnit);
+  console.log('View mode:', viewMode);
+  console.log('Selected month:', selectedMonth);
+  console.log('Total manual orders before filtering:', manualOrders.length);
+  
   const filteredManualOrders = filterManualOrders(manualOrders, filters, selectedMonth, viewMode);
+  
+  console.log('Manual orders after filtering:', filteredManualOrders.length);
+  console.log('Filtered manual orders by business unit:', filteredManualOrders.reduce((acc, order) => {
+    acc[order.businessUnit] = (acc[order.businessUnit] || 0) + 1;
+    return acc;
+  }, {} as { [key: string]: number }));
   
   const manualTotalSales = filteredManualOrders.reduce((sum, order) => sum + order.orderValue, 0);
   const manualTotalGP = filteredManualOrders.reduce((sum, order) => sum + order.grossProfit, 0);
   const manualOrderCount = filteredManualOrders.length;
 
+  console.log('Manual orders totals:', {
+    sales: manualTotalSales,
+    gp: manualTotalGP,
+    orders: manualOrderCount
+  });
+
   // The Dynamics data has already been filtered by business unit in the transformer
   // So we use it directly without additional business unit filtering
   const monthlyData = dynamicsData.monthlyTrend;
   let baseData: SalesData;
+
+  console.log('Base dynamics data (current month):', dynamicsData.currentMonth);
 
   if (viewMode === 'ytd') {
     const ytdData = monthlyData.slice(0, selectedMonth + 1).reduce((acc, month) => {
@@ -93,6 +113,13 @@ export const combineDataWithManualOrders = (
   const combinedTotalOrders = baseData.totalOrders + manualOrderCount;
   const combinedAverageMargin = combinedTotalSales > 0 ? (combinedTotalGP / combinedTotalSales) * 100 : 0;
 
+  console.log('Combined totals:', {
+    totalSales: combinedTotalSales,
+    totalGP: combinedTotalGP,
+    totalOrders: combinedTotalOrders,
+    averageMargin: combinedAverageMargin
+  });
+
   // Update margin bands to include manual orders
   const updatedMarginBands = [...dynamicsData.marginBands];
   
@@ -119,10 +146,29 @@ export const combineDataWithManualOrders = (
   const updatedMonthlyTrend = monthlyData.map(monthData => {
     const monthIndex = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(monthData.month);
     
-    // Get manual orders for this specific month
+    // Get manual orders for this specific month that match the current business unit filter
     const monthManualOrders = manualOrders.filter(order => {
       const orderDate = new Date(order.orderDate);
-      return orderDate.getMonth() === monthIndex;
+      const orderMonth = orderDate.getMonth();
+      
+      // Apply the same business unit filter logic as used in filterManualOrders
+      const normalizeBusinessUnit = (businessUnit: string): string => {
+        const mapping: { [key: string]: string } = {
+          'coil': 'Coil',
+          'unit': 'Unit', 
+          'm&e': 'M&E',
+          'hbpm': 'HBPM',
+          'mkt': 'MKT'
+        };
+        const normalized = businessUnit.toLowerCase();
+        return mapping[normalized] || businessUnit;
+      };
+      
+      const normalizedOrderBU = normalizeBusinessUnit(order.businessUnit);
+      const normalizedFilterBU = filters.businessUnit === 'all' ? 'all' : normalizeBusinessUnit(filters.businessUnit);
+      const businessUnitMatch = normalizedFilterBU === 'all' || normalizedOrderBU === normalizedFilterBU;
+      
+      return orderMonth === monthIndex && businessUnitMatch;
     });
     
     const monthManualSales = monthManualOrders.reduce((sum, order) => sum + order.orderValue, 0);

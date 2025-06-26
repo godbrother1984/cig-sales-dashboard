@@ -1,3 +1,4 @@
+
 import { SalesData, MarginBand, MonthlyData } from '../types';
 import { DynamicsApiResponse } from '../services/dynamicsApiService';
 
@@ -19,14 +20,13 @@ interface BusinessUnitTotals {
   [businessUnit: string]: {
     amount: number;
     orders: number;
-    grossProfit: number; // Changed from 'margin' to 'grossProfit'
+    grossProfit: number;
   };
 }
 
 export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, businessUnitFilter?: string) => {
   console.log('=== API Data Transformation Debug ===');
   console.log('Business unit filter:', businessUnitFilter);
-  console.log('Raw API data:', apiData);
   
   // Add null/undefined checks for API data
   if (!apiData || typeof apiData !== 'object') {
@@ -41,29 +41,25 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
   console.log('Original invoice data count:', invoiceData.length);
   console.log('Original sales order data count:', salesOrderData.length);
   
-  // Log sample data to understand structure
-  console.log('Sample invoice data:', invoiceData.slice(0, 2));
-  console.log('Sample sales order data:', salesOrderData.slice(0, 2));
-  
-  // Log all unique business units in the API data
-  const allBusinessUnits = new Set();
-  invoiceData.forEach(item => {
-    if (item?.bu) {
-      allBusinessUnits.add(item.bu);
-    }
-  });
-  salesOrderData.forEach(item => {
-    if (item?.bu) {
-      allBusinessUnits.add(item.bu);
-    }
-  });
-  console.log('All business units found in API data:', Array.from(allBusinessUnits));
-  
   // If both arrays are empty, return empty structure
   if (invoiceData.length === 0 && salesOrderData.length === 0) {
     console.log('No data found in API response, using empty structure');
     return getEmptyDataStructure();
   }
+  
+  // Log all unique business units in the API data BEFORE mapping
+  const originalBusinessUnits = new Set();
+  invoiceData.forEach(item => {
+    if (item?.bu) {
+      originalBusinessUnits.add(item.bu);
+    }
+  });
+  salesOrderData.forEach(item => {
+    if (item?.bu) {
+      originalBusinessUnits.add(item.bu);
+    }
+  });
+  console.log('Original business units from API:', Array.from(originalBusinessUnits));
   
   // Apply business unit mapping to data with null checks
   const processedInvoiceData = invoiceData.map(item => {
@@ -76,10 +72,10 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
       ...item,
       businessUnit: mappedBU,
       originalBU: item.bu, // Keep original for debugging
-      // Ensure numeric fields are numbers - FIXED: Use gross_profit instead of margin for GP
+      // Ensure numeric fields are numbers - Use gross_profit for GP calculations
       total_inv: Number(item.total_inv) || 0,
       total_inv_amount: Number(item.total_inv_amount) || 0,
-      gross_profit: Number(item.gross_profit) || 0, // Use gross_profit field
+      gross_profit: Number(item.gross_profit) || 0,
       margin: Number(item.margin) || 0, // Keep margin for margin bands
       inv_margin_below_10: Number(item.inv_margin_below_10) || 0,
       inv_margin_10_to_20: Number(item.inv_margin_10_to_20) || 0,
@@ -97,18 +93,15 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
       ...item,
       businessUnit: mappedBU,
       originalBU: item.bu, // Keep original for debugging
-      // Ensure numeric fields are numbers - FIXED: Use gross_profit instead of margin for GP
+      // Ensure numeric fields are numbers - Use gross_profit for GP calculations
       total_so: Number(item.total_so) || 0,
       total_so_amount: Number(item.total_so_amount) || 0,
-      gross_profit: Number(item.gross_profit) || 0, // Use gross_profit field
+      gross_profit: Number(item.gross_profit) || 0,
       margin: Number(item.margin) || 0 // Keep margin for margin bands
     };
   }).filter(item => item !== null);
   
-  console.log('Processed invoice data (with BU mapping):', processedInvoiceData);
-  console.log('Processed sales order data (with BU mapping):', processedSalesOrderData);
-  
-  // Log business unit distribution after mapping
+  // Log business units after mapping
   const mappedBusinessUnits = new Set();
   processedInvoiceData.forEach(item => mappedBusinessUnits.add(item.businessUnit));
   processedSalesOrderData.forEach(item => mappedBusinessUnits.add(item.businessUnit));
@@ -118,93 +111,34 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
   let filteredInvoiceData, filteredSalesOrderData;
   
   if (businessUnitFilter && businessUnitFilter !== 'all') {
-    console.log('Applying specific business unit filter:', businessUnitFilter);
-    filteredInvoiceData = processedInvoiceData.filter(item => item && item.businessUnit === businessUnitFilter);
-    filteredSalesOrderData = processedSalesOrderData.filter(item => item && item.businessUnit === businessUnitFilter);
+    console.log('=== APPLYING BUSINESS UNIT FILTER ===');
+    console.log('Filter:', businessUnitFilter);
+    
+    filteredInvoiceData = processedInvoiceData.filter(item => {
+      const matches = item && item.businessUnit === businessUnitFilter;
+      if (matches) {
+        console.log(`Invoice item matches filter: BU=${item.businessUnit}, Month=${item.month}, Amount=${item.total_inv_amount}, Orders=${item.total_inv}, GP=${item.gross_profit}`);
+      }
+      return matches;
+    });
+    
+    filteredSalesOrderData = processedSalesOrderData.filter(item => {
+      const matches = item && item.businessUnit === businessUnitFilter;
+      if (matches) {
+        console.log(`Sales Order item matches filter: BU=${item.businessUnit}, Month=${item.month}, Amount=${item.total_so_amount}, Orders=${item.total_so}, GP=${item.gross_profit}`);
+      }
+      return matches;
+    });
+    
+    console.log(`Filtered results for ${businessUnitFilter}:`, {
+      invoiceCount: filteredInvoiceData.length,
+      salesOrderCount: filteredSalesOrderData.length
+    });
   } else {
     console.log('Using ALL business units (no filter applied)');
     filteredInvoiceData = processedInvoiceData;
     filteredSalesOrderData = processedSalesOrderData;
   }
-  
-  console.log('Filtered data counts:', {
-    businessUnitFilter,
-    originalInvoiceCount: processedInvoiceData.length,
-    filteredInvoiceCount: filteredInvoiceData.length,
-    originalSalesOrderCount: processedSalesOrderData.length,
-    filteredSalesOrderCount: filteredSalesOrderData.length
-  });
-  
-  // Log detailed data by business unit and month for debugging
-  console.log('=== DETAILED DATA ANALYSIS ===');
-  const dataByBUAndMonth: { [key: string]: { [key: string]: any } } = {};
-  
-  filteredInvoiceData.forEach(item => {
-    const key = `${item.businessUnit}-${item.month}`;
-    if (!dataByBUAndMonth[key]) {
-      dataByBUAndMonth[key] = { invoices: [], salesOrders: [] };
-    }
-    dataByBUAndMonth[key].invoices.push({
-      amount: item.total_inv_amount,
-      orders: item.total_inv,
-      grossProfit: item.gross_profit,
-      margin: item.margin
-    });
-  });
-  
-  filteredSalesOrderData.forEach(item => {
-    const key = `${item.businessUnit}-${item.month}`;
-    if (!dataByBUAndMonth[key]) {
-      dataByBUAndMonth[key] = { invoices: [], salesOrders: [] };
-    }
-    dataByBUAndMonth[key].salesOrders.push({
-      amount: item.total_so_amount,
-      orders: item.total_so,
-      grossProfit: item.gross_profit,
-      margin: item.margin
-    });
-  });
-  
-  console.log('Data by Business Unit and Month:', dataByBUAndMonth);
-  
-  // Log aggregated totals by business unit for debugging
-  const invoiceTotalsByBU: BusinessUnitTotals = {};
-  const salesOrderTotalsByBU: BusinessUnitTotals = {};
-  
-  filteredInvoiceData.forEach(item => {
-    const bu = item.businessUnit;
-    if (!invoiceTotalsByBU[bu]) {
-      invoiceTotalsByBU[bu] = { amount: 0, orders: 0, grossProfit: 0 };
-    }
-    invoiceTotalsByBU[bu].amount += item.total_inv_amount;
-    invoiceTotalsByBU[bu].orders += item.total_inv;
-    invoiceTotalsByBU[bu].grossProfit += item.gross_profit; // FIXED: Use gross_profit
-  });
-  
-  filteredSalesOrderData.forEach(item => {
-    const bu = item.businessUnit;
-    if (!salesOrderTotalsByBU[bu]) {
-      salesOrderTotalsByBU[bu] = { amount: 0, orders: 0, grossProfit: 0 };
-    }
-    salesOrderTotalsByBU[bu].amount += item.total_so_amount;
-    salesOrderTotalsByBU[bu].orders += item.total_so;
-    salesOrderTotalsByBU[bu].grossProfit += item.gross_profit; // FIXED: Use gross_profit
-  });
-  
-  console.log('Invoice totals by business unit:', invoiceTotalsByBU);
-  console.log('Sales order totals by business unit:', salesOrderTotalsByBU);
-  
-  // Calculate grand totals with proper typing
-  const grandTotals = {
-    invoiceAmount: Object.values(invoiceTotalsByBU).reduce((sum, bu) => sum + bu.amount, 0),
-    invoiceOrders: Object.values(invoiceTotalsByBU).reduce((sum, bu) => sum + bu.orders, 0),
-    invoiceGrossProfit: Object.values(invoiceTotalsByBU).reduce((sum, bu) => sum + bu.grossProfit, 0), // FIXED
-    salesOrderAmount: Object.values(salesOrderTotalsByBU).reduce((sum, bu) => sum + bu.amount, 0),
-    salesOrderOrders: Object.values(salesOrderTotalsByBU).reduce((sum, bu) => sum + bu.orders, 0),
-    salesOrderGrossProfit: Object.values(salesOrderTotalsByBU).reduce((sum, bu) => sum + bu.grossProfit, 0) // FIXED
-  };
-  
-  console.log('GRAND TOTALS:', grandTotals);
   
   // Define month order for chronological comparison
   const monthOrder = {
@@ -254,16 +188,25 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
     console.log(`Using first available month as fallback: ${latestMonth}`);
   }
   
-  // Aggregate data for the latest month from filtered data
+  // Aggregate data for the latest month from filtered data with detailed logging
+  console.log(`=== AGGREGATING DATA FOR ${latestMonth.toUpperCase()} ===`);
+  
   const latestInvoiceData = filteredInvoiceData
-    .filter(item => item && item.month && item.month.toLowerCase() === latestMonth)
+    .filter(item => {
+      const matches = item && item.month && item.month.toLowerCase() === latestMonth;
+      if (matches) {
+        console.log(`Including invoice item for ${latestMonth}: BU=${item.businessUnit}, Amount=${item.total_inv_amount}, Orders=${item.total_inv}, GP=${item.gross_profit}`);
+      }
+      return matches;
+    })
     .reduce((acc, item) => {
       if (!item) return acc;
+      console.log(`Adding invoice values: Amount +${item.total_inv_amount}, Orders +${item.total_inv}, GP +${item.gross_profit}`);
       return {
         month: latestMonth,
         total_inv: acc.total_inv + (Number(item.total_inv) || 0),
         total_inv_amount: acc.total_inv_amount + (Number(item.total_inv_amount) || 0),
-        gross_profit: acc.gross_profit + (Number(item.gross_profit) || 0), // FIXED: Use gross_profit
+        gross_profit: acc.gross_profit + (Number(item.gross_profit) || 0),
         inv_margin_below_10: acc.inv_margin_below_10 + (Number(item.inv_margin_below_10) || 0),
         inv_margin_10_to_20: acc.inv_margin_10_to_20 + (Number(item.inv_margin_10_to_20) || 0),
         inv_margin_above_20: acc.inv_margin_above_20 + (Number(item.inv_margin_above_20) || 0)
@@ -272,27 +215,34 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
       month: latestMonth,
       total_inv: 0,
       total_inv_amount: 0,
-      gross_profit: 0, // FIXED: Use gross_profit
+      gross_profit: 0,
       inv_margin_below_10: 0,
       inv_margin_10_to_20: 0,
       inv_margin_above_20: 0
     });
 
   const latestSalesOrderData = filteredSalesOrderData
-    .filter(item => item && item.month && item.month.toLowerCase() === latestMonth)
+    .filter(item => {
+      const matches = item && item.month && item.month.toLowerCase() === latestMonth;
+      if (matches) {
+        console.log(`Including sales order item for ${latestMonth}: BU=${item.businessUnit}, Amount=${item.total_so_amount}, Orders=${item.total_so}, GP=${item.gross_profit}`);
+      }
+      return matches;
+    })
     .reduce((acc, item) => {
       if (!item) return acc;
+      console.log(`Adding sales order values: Amount +${item.total_so_amount}, Orders +${item.total_so}, GP +${item.gross_profit}`);
       return {
         month: latestMonth,
         total_so: acc.total_so + (Number(item.total_so) || 0),
         total_so_amount: acc.total_so_amount + (Number(item.total_so_amount) || 0),
-        gross_profit: acc.gross_profit + (Number(item.gross_profit) || 0) // FIXED: Use gross_profit
+        gross_profit: acc.gross_profit + (Number(item.gross_profit) || 0)
       };
     }, {
       month: latestMonth,
       total_so: 0,
       total_so_amount: 0,
-      gross_profit: 0 // FIXED: Use gross_profit
+      gross_profit: 0
     });
   
   console.log('Latest month aggregated data:', {
@@ -312,32 +262,31 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
   if (latestMonth) {
     const invoiceAmount = Number(latestInvoiceData?.total_inv_amount) || 0;
     const salesOrderAmount = Number(latestSalesOrderData?.total_so_amount) || 0;
-    const invoiceGP = Number(latestInvoiceData?.gross_profit) || 0; // FIXED: Use gross_profit
-    const salesOrderGP = Number(latestSalesOrderData?.gross_profit) || 0; // FIXED: Use gross_profit
+    const invoiceGP = Number(latestInvoiceData?.gross_profit) || 0;
+    const salesOrderGP = Number(latestSalesOrderData?.gross_profit) || 0;
     const invoiceOrders = Number(latestInvoiceData?.total_inv) || 0;
     const salesOrderOrders = Number(latestSalesOrderData?.total_so) || 0;
     
     currentMonthTotals.totalSales = invoiceAmount + salesOrderAmount;
     currentMonthTotals.totalGP = invoiceGP + salesOrderGP;
-    currentMonthTotals.totalOrders = invoiceOrders + salesOrderOrders; // CONFIRMED: total_inv + total_so
+    currentMonthTotals.totalOrders = invoiceOrders + salesOrderOrders; // Confirmed: total_inv + total_so
     currentMonthTotals.averageMargin = currentMonthTotals.totalSales > 0 ? 
       (currentMonthTotals.totalGP / currentMonthTotals.totalSales) * 100 : 0;
     
-    console.log('FINAL CURRENT MONTH TOTALS:', {
-      latestMonth: latestMonth,
-      businessUnitFilter: businessUnitFilter,
-      invoiceAmount,
-      salesOrderAmount,
-      totalSales: currentMonthTotals.totalSales,
-      invoiceGP,
-      salesOrderGP,
-      totalGP: currentMonthTotals.totalGP,
-      totalOrders: currentMonthTotals.totalOrders,
-      averageMargin: currentMonthTotals.averageMargin
-    });
+    console.log('=== FINAL CURRENT MONTH TOTALS ===');
+    console.log(`Business Unit Filter: ${businessUnitFilter}`);
+    console.log(`Latest Month: ${latestMonth}`);
+    console.log(`Invoice Amount: ${invoiceAmount}`);
+    console.log(`Sales Order Amount: ${salesOrderAmount}`);
+    console.log(`Total Sales: ${currentMonthTotals.totalSales}`);
+    console.log(`Invoice GP: ${invoiceGP}`);
+    console.log(`Sales Order GP: ${salesOrderGP}`);
+    console.log(`Total GP: ${currentMonthTotals.totalGP}`);
+    console.log(`Total Orders: ${currentMonthTotals.totalOrders}`);
+    console.log(`Average Margin: ${currentMonthTotals.averageMargin}`);
   }
   
-  // Transform monthly data from API response - aggregate by month across all business units
+  // Transform monthly data from API response - aggregate by month across filtered business units
   const monthlyTrend: MonthlyData[] = [];
   
   // Sort available months chronologically
@@ -347,18 +296,22 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
     return orderA - orderB;
   });
   
+  console.log('=== GENERATING MONTHLY TREND ===');
   console.log('Sorted available months:', sortedAvailableMonths);
   
   // Generate monthly trend for all months that have data in the filtered API response
   sortedAvailableMonths.forEach(monthKey => {
+    console.log(`Processing monthly trend for ${monthKey}:`);
+    
     // Aggregate data for this month from filtered data
     const invoiceMonthData = filteredInvoiceData
       .filter(item => item && item.month && item.month.toLowerCase() === monthKey)
       .reduce((acc, item) => {
         if (!item) return acc;
+        console.log(`  Invoice: BU=${item.businessUnit}, Amount=${item.total_inv_amount}, GP=${item.gross_profit}, Orders=${item.total_inv}`);
         return {
           total_inv_amount: acc.total_inv_amount + (Number(item.total_inv_amount) || 0),
-          gross_profit: acc.gross_profit + (Number(item.gross_profit) || 0), // FIXED: Use gross_profit
+          gross_profit: acc.gross_profit + (Number(item.gross_profit) || 0),
           total_inv: acc.total_inv + (Number(item.total_inv) || 0)
         };
       }, { total_inv_amount: 0, gross_profit: 0, total_inv: 0 });
@@ -367,19 +320,20 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
       .filter(item => item && item.month && item.month.toLowerCase() === monthKey)
       .reduce((acc, item) => {
         if (!item) return acc;
+        console.log(`  Sales Order: BU=${item.businessUnit}, Amount=${item.total_so_amount}, GP=${item.gross_profit}, Orders=${item.total_so}`);
         return {
           total_so_amount: acc.total_so_amount + (Number(item.total_so_amount) || 0),
-          gross_profit: acc.gross_profit + (Number(item.gross_profit) || 0), // FIXED: Use gross_profit
+          gross_profit: acc.gross_profit + (Number(item.gross_profit) || 0),
           total_so: acc.total_so + (Number(item.total_so) || 0)
         };
       }, { total_so_amount: 0, gross_profit: 0, total_so: 0 });
     
     // Combine invoice and sales order data
     const totalSales = (Number(invoiceMonthData.total_inv_amount) || 0) + (Number(salesOrderMonthData.total_so_amount) || 0);
-    const totalGP = (Number(invoiceMonthData.gross_profit) || 0) + (Number(salesOrderMonthData.gross_profit) || 0); // FIXED
+    const totalGP = (Number(invoiceMonthData.gross_profit) || 0) + (Number(salesOrderMonthData.gross_profit) || 0);
     const totalOrders = (Number(invoiceMonthData.total_inv) || 0) + (Number(salesOrderMonthData.total_so) || 0);
     
-    console.log(`Month ${monthKey} totals:`, { totalSales, totalGP, totalOrders });
+    console.log(`  ${monthKey} totals: Sales=${totalSales}, GP=${totalGP}, Orders=${totalOrders}`);
     
     monthlyTrend.push({
       month: monthKey.charAt(0).toUpperCase() + monthKey.slice(1), // Capitalize first letter

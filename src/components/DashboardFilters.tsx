@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -13,11 +14,13 @@ interface DashboardFiltersProps {
 }
 
 export const DashboardFilters: React.FC<DashboardFiltersProps> = ({ filters, onFilterChange }) => {
+  // Ensure consistent business unit options across the application
   const businessUnits = ['All', 'Coil', 'Unit', 'M&E', 'HBPM', 'MKT'];
   const customers = ['All', 'Toyota Motor Thailand', 'Honda Automobile Thailand', 'Isuzu Motors'];
   const salespeople = ['All', 'John Smith', 'Sarah Johnson', 'Mike Chen'];
 
   const handleFilterChange = (filterType: string, value: string) => {
+    console.log(`Filter change: ${filterType} = ${value}`);
     onFilterChange({
       ...filters,
       [filterType]: value.toLowerCase() === 'all' ? 'all' : value
