@@ -1,4 +1,3 @@
-
 import { SalesData, MarginBand, MonthlyData } from '../types';
 import { DynamicsApiResponse } from '../services/dynamicsApiService';
 
@@ -15,8 +14,8 @@ const mapBusinessUnit = (apiBusinessUnit: string): string => {
   return businessUnitMapping[apiBusinessUnit] || apiBusinessUnit;
 };
 
-export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) => {
-  console.log('Transforming API data:', apiData);
+export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, businessUnitFilter?: string) => {
+  console.log('Transforming API data with business unit filter:', { apiData, businessUnitFilter });
   
   // Add null/undefined checks for API data
   if (!apiData || typeof apiData !== 'object') {
@@ -71,7 +70,22 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
     };
   }).filter(item => item !== null);
   
-  console.log('Processed data with BU mapping:', { processedInvoiceData, processedSalesOrderData });
+  // Apply business unit filter if specified
+  const filteredInvoiceData = businessUnitFilter && businessUnitFilter !== 'all' 
+    ? processedInvoiceData.filter(item => item && item.businessUnit === businessUnitFilter)
+    : processedInvoiceData;
+    
+  const filteredSalesOrderData = businessUnitFilter && businessUnitFilter !== 'all'
+    ? processedSalesOrderData.filter(item => item && item.businessUnit === businessUnitFilter)
+    : processedSalesOrderData;
+  
+  console.log('Processed data with BU mapping and filtering:', { 
+    businessUnitFilter,
+    originalInvoiceCount: processedInvoiceData.length,
+    filteredInvoiceCount: filteredInvoiceData.length,
+    originalSalesOrderCount: processedSalesOrderData.length,
+    filteredSalesOrderCount: filteredSalesOrderData.length
+  });
   
   // Define month order for chronological comparison
   const monthOrder = {
@@ -79,14 +93,14 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
     'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
   };
   
-  // Extract all unique months that actually exist in the API data
+  // Extract all unique months that actually exist in the filtered API data
   const availableMonths = new Set<string>();
-  processedInvoiceData.forEach(item => {
+  filteredInvoiceData.forEach(item => {
     if (item && item.month && typeof item.month === 'string') {
       availableMonths.add(item.month.toLowerCase());
     }
   });
-  processedSalesOrderData.forEach(item => {
+  filteredSalesOrderData.forEach(item => {
     if (item && item.month && typeof item.month === 'string') {
       availableMonths.add(item.month.toLowerCase());
     }
@@ -121,8 +135,8 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
     console.log(`Using first available month as fallback: ${latestMonth}`);
   }
   
-  // Aggregate data for the latest month across all business units
-  const latestInvoiceData = processedInvoiceData
+  // Aggregate data for the latest month from filtered data
+  const latestInvoiceData = filteredInvoiceData
     .filter(item => item && item.month && item.month.toLowerCase() === latestMonth)
     .reduce((acc, item) => {
       if (!item) return acc;
@@ -145,7 +159,7 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
       inv_margin_above_20: 0
     });
 
-  const latestSalesOrderData = processedSalesOrderData
+  const latestSalesOrderData = filteredSalesOrderData
     .filter(item => item && item.month && item.month.toLowerCase() === latestMonth)
     .reduce((acc, item) => {
       if (!item) return acc;
@@ -162,8 +176,11 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
       margin: 0
     });
   
-  console.log('Latest month aggregated invoice data:', latestInvoiceData);
-  console.log('Latest month aggregated sales order data:', latestSalesOrderData);
+  console.log('Latest month aggregated data with BU filter:', {
+    businessUnitFilter,
+    latestInvoiceData,
+    latestSalesOrderData
+  });
   
   // Calculate current month totals from the latest available data
   let currentMonthTotals = {
@@ -212,10 +229,10 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   
   console.log('Sorted available months:', sortedAvailableMonths);
   
-  // Generate monthly trend for all months that have data in the API response
+  // Generate monthly trend for all months that have data in the filtered API response
   sortedAvailableMonths.forEach(monthKey => {
-    // Aggregate data for this month across all business units
-    const invoiceMonthData = processedInvoiceData
+    // Aggregate data for this month from filtered data
+    const invoiceMonthData = filteredInvoiceData
       .filter(item => item && item.month && item.month.toLowerCase() === monthKey)
       .reduce((acc, item) => {
         if (!item) return acc;
@@ -226,7 +243,7 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
         };
       }, { total_inv_amount: 0, margin: 0, total_inv: 0 });
 
-    const salesOrderMonthData = processedSalesOrderData
+    const salesOrderMonthData = filteredSalesOrderData
       .filter(item => item && item.month && item.month.toLowerCase() === monthKey)
       .reduce((acc, item) => {
         if (!item) return acc;

@@ -17,7 +17,8 @@ export const combineDataWithManualOrders = (
   const manualTotalGP = filteredManualOrders.reduce((sum, order) => sum + order.grossProfit, 0);
   const manualOrderCount = filteredManualOrders.length;
 
-  // Get base dynamics data for the selected month/QTD/YTD
+  // The Dynamics data has already been filtered by business unit in the transformer
+  // So we use it directly without additional business unit filtering
   const monthlyData = dynamicsData.monthlyTrend;
   let baseData: SalesData;
 
@@ -57,7 +58,8 @@ export const combineDataWithManualOrders = (
     };
   }
 
-  // Apply additional filters (salesperson, customer) - only for monthly view
+  // Apply salesperson and customer filters (only for monthly view)
+  // Business unit filtering is already applied at the API data level
   if (filters.salesperson !== 'all' && viewMode === 'monthly') {
     const currentMonthIndex = Math.min(selectedMonth, monthlyData.length - 1);
     const currentMonthData = monthlyData[currentMonthIndex];

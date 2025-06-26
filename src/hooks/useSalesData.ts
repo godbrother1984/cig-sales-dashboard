@@ -36,9 +36,10 @@ export const useSalesData = (
       });
 
       const apiResponse = await apiService.fetchSalesData();
-      const transformedData = transformApiDataToExpectedFormat(apiResponse);
+      // Pass the business unit filter to the transformer
+      const transformedData = transformApiDataToExpectedFormat(apiResponse, filters.businessUnit);
       
-      console.log('Successfully fetched and transformed API data');
+      console.log('Successfully fetched and transformed API data with business unit filter:', filters.businessUnit);
       
       // Clear any previous errors and show success if we had errors before
       if (apiError) {
