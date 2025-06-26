@@ -1,3 +1,4 @@
+
 import { SalesData, MarginBand, MonthlyData } from '../types';
 import { DynamicsApiResponse } from '../services/dynamicsApiService';
 
@@ -13,6 +14,15 @@ const mapBusinessUnit = (apiBusinessUnit: string): string => {
   
   return businessUnitMapping[apiBusinessUnit] || apiBusinessUnit;
 };
+
+// Type definition for business unit totals
+interface BusinessUnitTotals {
+  [businessUnit: string]: {
+    amount: number;
+    orders: number;
+    margin: number;
+  };
+}
 
 export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, businessUnitFilter?: string) => {
   console.log('=== API Data Transformation Debug ===');
@@ -121,8 +131,8 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
   });
   
   // Log aggregated totals by business unit for debugging
-  const invoiceTotalsByBU = {};
-  const salesOrderTotalsByBU = {};
+  const invoiceTotalsByBU: BusinessUnitTotals = {};
+  const salesOrderTotalsByBU: BusinessUnitTotals = {};
   
   filteredInvoiceData.forEach(item => {
     const bu = item.businessUnit;
@@ -147,7 +157,7 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
   console.log('Invoice totals by business unit:', invoiceTotalsByBU);
   console.log('Sales order totals by business unit:', salesOrderTotalsByBU);
   
-  // Calculate grand totals
+  // Calculate grand totals with proper typing
   const grandTotals = {
     invoiceAmount: Object.values(invoiceTotalsByBU).reduce((sum, bu) => sum + bu.amount, 0),
     invoiceOrders: Object.values(invoiceTotalsByBU).reduce((sum, bu) => sum + bu.orders, 0),
