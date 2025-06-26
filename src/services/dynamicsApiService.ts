@@ -1,5 +1,4 @@
 
-
 export interface DynamicsApiResponse {
   result: boolean;
   datas: {
@@ -9,7 +8,8 @@ export interface DynamicsApiResponse {
       bu: string;
       total_inv: number;
       total_inv_amount: number;
-      gm_inv: number;
+      gross_profit: number;
+      margin: number;
       inv_margin_below_10: number;
       inv_margin_10_to_20: number;
       inv_margin_above_20: number;
@@ -20,7 +20,8 @@ export interface DynamicsApiResponse {
       bu: string;
       total_so: number;
       total_so_amount: number;
-      gm_so: number;
+      gross_profit: number;
+      margin: number;
     }>;
   };
   canChange: boolean;

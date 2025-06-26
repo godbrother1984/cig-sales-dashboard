@@ -73,7 +73,7 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
       month: latestMonth,
       total_inv: acc.total_inv + item.total_inv,
       total_inv_amount: acc.total_inv_amount + item.total_inv_amount,
-      gm_inv: acc.gm_inv + item.gm_inv,
+      margin: acc.margin + item.margin,
       inv_margin_below_10: acc.inv_margin_below_10 + item.inv_margin_below_10,
       inv_margin_10_to_20: acc.inv_margin_10_to_20 + item.inv_margin_10_to_20,
       inv_margin_above_20: acc.inv_margin_above_20 + item.inv_margin_above_20
@@ -81,7 +81,7 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
       month: latestMonth,
       total_inv: 0,
       total_inv_amount: 0,
-      gm_inv: 0,
+      margin: 0,
       inv_margin_below_10: 0,
       inv_margin_10_to_20: 0,
       inv_margin_above_20: 0
@@ -93,12 +93,12 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
       month: latestMonth,
       total_so: acc.total_so + item.total_so,
       total_so_amount: acc.total_so_amount + item.total_so_amount,
-      gm_so: acc.gm_so + item.gm_so
+      margin: acc.margin + item.margin
     }), {
       month: latestMonth,
       total_so: 0,
       total_so_amount: 0,
-      gm_so: 0
+      margin: 0
     });
   
   console.log('Latest month aggregated invoice data:', latestInvoiceData);
@@ -115,8 +115,8 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   if (latestMonth) {
     const invoiceAmount = latestInvoiceData?.total_inv_amount || 0;
     const salesOrderAmount = latestSalesOrderData?.total_so_amount || 0;
-    const invoiceGP = latestInvoiceData?.gm_inv || 0;
-    const salesOrderGP = latestSalesOrderData?.gm_so || 0;
+    const invoiceGP = latestInvoiceData?.margin || 0;
+    const salesOrderGP = latestSalesOrderData?.margin || 0;
     const invoiceOrders = latestInvoiceData?.total_inv || 0;
     const salesOrderOrders = latestSalesOrderData?.total_so || 0;
     
@@ -158,21 +158,21 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
       .filter(item => item.month === monthKey)
       .reduce((acc, item) => ({
         total_inv_amount: acc.total_inv_amount + item.total_inv_amount,
-        gm_inv: acc.gm_inv + item.gm_inv,
+        margin: acc.margin + item.margin,
         total_inv: acc.total_inv + item.total_inv
-      }), { total_inv_amount: 0, gm_inv: 0, total_inv: 0 });
+      }), { total_inv_amount: 0, margin: 0, total_inv: 0 });
 
     const salesOrderMonthData = processedSalesOrderData
       .filter(item => item.month === monthKey)
       .reduce((acc, item) => ({
         total_so_amount: acc.total_so_amount + item.total_so_amount,
-        gm_so: acc.gm_so + item.gm_so,
+        margin: acc.margin + item.margin,
         total_so: acc.total_so + item.total_so
-      }), { total_so_amount: 0, gm_so: 0, total_so: 0 });
+      }), { total_so_amount: 0, margin: 0, total_so: 0 });
     
     // Combine invoice and sales order data
     const totalSales = invoiceMonthData.total_inv_amount + salesOrderMonthData.total_so_amount;
-    const totalGP = invoiceMonthData.gm_inv + salesOrderMonthData.gm_so;
+    const totalGP = invoiceMonthData.margin + salesOrderMonthData.margin;
     const totalOrders = invoiceMonthData.total_inv + salesOrderMonthData.total_so;
     
     monthlyTrend.push({
