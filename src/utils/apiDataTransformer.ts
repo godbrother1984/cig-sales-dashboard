@@ -24,19 +24,6 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   console.log('Invoice data:', invoiceData);
   console.log('Sales order data:', salesOrderData);
   
-  // Apply business unit mapping to data if needed
-  const processedInvoiceData = invoiceData.map(item => ({
-    ...item,
-    businessUnit: mapBusinessUnit(item.businessUnit || 'Coil')
-  }));
-  
-  const processedSalesOrderData = salesOrderData.map(item => ({
-    ...item,
-    businessUnit: mapBusinessUnit(item.businessUnit || 'Coil')
-  }));
-  
-  console.log('Processed data with BU mapping:', { processedInvoiceData, processedSalesOrderData });
-  
   // Define month order for chronological comparison
   const monthOrder = {
     'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
