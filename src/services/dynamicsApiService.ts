@@ -1,9 +1,12 @@
 
+
 export interface DynamicsApiResponse {
   result: boolean;
   datas: {
     invoice: Array<{
       month: string;
+      dataArea: string;
+      bu: string;
       total_inv: number;
       total_inv_amount: number;
       gm_inv: number;
@@ -13,6 +16,8 @@ export interface DynamicsApiResponse {
     }>;
     sales_order: Array<{
       month: string;
+      dataArea: string;
+      bu: string;
       total_so: number;
       total_so_amount: number;
       gm_so: number;

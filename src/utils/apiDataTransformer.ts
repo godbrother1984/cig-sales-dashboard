@@ -1,3 +1,4 @@
+
 import { SalesData, MarginBand, MonthlyData } from '../types';
 import { DynamicsApiResponse } from '../services/dynamicsApiService';
 
@@ -24,6 +25,19 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   console.log('Invoice data:', invoiceData);
   console.log('Sales order data:', salesOrderData);
   
+  // Apply business unit mapping to data
+  const processedInvoiceData = invoiceData.map(item => ({
+    ...item,
+    businessUnit: mapBusinessUnit(item.bu || 'Coil')
+  }));
+  
+  const processedSalesOrderData = salesOrderData.map(item => ({
+    ...item,
+    businessUnit: mapBusinessUnit(item.bu || 'Coil')
+  }));
+  
+  console.log('Processed data with BU mapping:', { processedInvoiceData, processedSalesOrderData });
+  
   // Define month order for chronological comparison
   const monthOrder = {
     'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
@@ -32,8 +46,8 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   
   // Extract all unique months that actually exist in the API data
   const availableMonths = new Set<string>();
-  invoiceData.forEach(item => availableMonths.add(item.month));
-  salesOrderData.forEach(item => availableMonths.add(item.month));
+  processedInvoiceData.forEach(item => availableMonths.add(item.month));
+  processedSalesOrderData.forEach(item => availableMonths.add(item.month));
   
   const availableMonthsArray = Array.from(availableMonths);
   console.log('Available months in API data:', availableMonthsArray);
@@ -52,12 +66,43 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   
   console.log(`Latest month found: ${latestMonth} (order: ${latestMonthOrder})`);
   
-  // Get data for the latest month
-  const latestInvoiceData = invoiceData.find(item => item.month === latestMonth);
-  const latestSalesOrderData = salesOrderData.find(item => item.month === latestMonth);
+  // Aggregate data for the latest month across all business units
+  const latestInvoiceData = processedInvoiceData
+    .filter(item => item.month === latestMonth)
+    .reduce((acc, item) => ({
+      month: latestMonth,
+      total_inv: acc.total_inv + item.total_inv,
+      total_inv_amount: acc.total_inv_amount + item.total_inv_amount,
+      gm_inv: acc.gm_inv + item.gm_inv,
+      inv_margin_below_10: acc.inv_margin_below_10 + item.inv_margin_below_10,
+      inv_margin_10_to_20: acc.inv_margin_10_to_20 + item.inv_margin_10_to_20,
+      inv_margin_above_20: acc.inv_margin_above_20 + item.inv_margin_above_20
+    }), {
+      month: latestMonth,
+      total_inv: 0,
+      total_inv_amount: 0,
+      gm_inv: 0,
+      inv_margin_below_10: 0,
+      inv_margin_10_to_20: 0,
+      inv_margin_above_20: 0
+    });
+
+  const latestSalesOrderData = processedSalesOrderData
+    .filter(item => item.month === latestMonth)
+    .reduce((acc, item) => ({
+      month: latestMonth,
+      total_so: acc.total_so + item.total_so,
+      total_so_amount: acc.total_so_amount + item.total_so_amount,
+      gm_so: acc.gm_so + item.gm_so
+    }), {
+      month: latestMonth,
+      total_so: 0,
+      total_so_amount: 0,
+      gm_so: 0
+    });
   
-  console.log('Latest month invoice data:', latestInvoiceData);
-  console.log('Latest month sales order data:', latestSalesOrderData);
+  console.log('Latest month aggregated invoice data:', latestInvoiceData);
+  console.log('Latest month aggregated sales order data:', latestSalesOrderData);
   
   // Calculate current month totals from the latest available data
   let currentMonthTotals = {
@@ -81,7 +126,7 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
     currentMonthTotals.averageMargin = currentMonthTotals.totalSales > 0 ? 
       (currentMonthTotals.totalGP / currentMonthTotals.totalSales) * 100 : 0;
     
-    console.log('Calculated current month totals from latest data:', {
+    console.log('Calculated current month totals from latest aggregated data:', {
       latestMonth: latestMonth,
       invoiceAmount,
       salesOrderAmount,
@@ -92,16 +137,9 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
       totalOrders: currentMonthTotals.totalOrders,
       averageMargin: currentMonthTotals.averageMargin
     });
-    
-    // Validation: Check if we get the expected total
-    if (currentMonthTotals.totalSales === 3893945) {
-      console.log('✅ SUCCESS: Total sales matches expected value of 3,893,945');
-    } else {
-      console.log('❌ MISMATCH: Expected 3,893,945 but got', currentMonthTotals.totalSales);
-    }
   }
   
-  // Transform monthly data from API response - use available months sorted chronologically
+  // Transform monthly data from API response - aggregate by month across all business units
   const monthlyTrend: MonthlyData[] = [];
   
   // Sort available months chronologically
@@ -115,14 +153,27 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   
   // Generate monthly trend for all months that have data in the API response
   sortedAvailableMonths.forEach(monthKey => {
-    // Find data for this month in both invoice and sales order arrays
-    const invoiceMonthData = invoiceData.find(item => item.month === monthKey);
-    const salesOrderMonthData = salesOrderData.find(item => item.month === monthKey);
+    // Aggregate data for this month across all business units
+    const invoiceMonthData = processedInvoiceData
+      .filter(item => item.month === monthKey)
+      .reduce((acc, item) => ({
+        total_inv_amount: acc.total_inv_amount + item.total_inv_amount,
+        gm_inv: acc.gm_inv + item.gm_inv,
+        total_inv: acc.total_inv + item.total_inv
+      }), { total_inv_amount: 0, gm_inv: 0, total_inv: 0 });
+
+    const salesOrderMonthData = processedSalesOrderData
+      .filter(item => item.month === monthKey)
+      .reduce((acc, item) => ({
+        total_so_amount: acc.total_so_amount + item.total_so_amount,
+        gm_so: acc.gm_so + item.gm_so,
+        total_so: acc.total_so + item.total_so
+      }), { total_so_amount: 0, gm_so: 0, total_so: 0 });
     
     // Combine invoice and sales order data
-    const totalSales = (invoiceMonthData?.total_inv_amount || 0) + (salesOrderMonthData?.total_so_amount || 0);
-    const totalGP = (invoiceMonthData?.gm_inv || 0) + (salesOrderMonthData?.gm_so || 0);
-    const totalOrders = (invoiceMonthData?.total_inv || 0) + (salesOrderMonthData?.total_so || 0);
+    const totalSales = invoiceMonthData.total_inv_amount + salesOrderMonthData.total_so_amount;
+    const totalGP = invoiceMonthData.gm_inv + salesOrderMonthData.gm_so;
+    const totalOrders = invoiceMonthData.total_inv + salesOrderMonthData.total_so;
     
     monthlyTrend.push({
       month: monthKey.charAt(0).toUpperCase() + monthKey.slice(1), // Capitalize first letter
@@ -166,16 +217,16 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
     });
   });
 
-  // Transform margin bands from the latest month data
+  // Transform margin bands from the latest month aggregated data
   const marginBands: MarginBand[] = [];
   
-  if (latestInvoiceData) {
-    const totalValue = latestInvoiceData.total_inv_amount || 0;
-    const totalOrders = latestInvoiceData.total_inv || 0;
+  if (latestInvoiceData && latestInvoiceData.total_inv_amount > 0) {
+    const totalValue = latestInvoiceData.total_inv_amount;
+    const totalOrders = latestInvoiceData.total_inv;
     
-    const below10Orders = latestInvoiceData.inv_margin_below_10 || 0;
-    const band10to20Orders = latestInvoiceData.inv_margin_10_to_20 || 0;
-    const above20Orders = latestInvoiceData.inv_margin_above_20 || 0;
+    const below10Orders = latestInvoiceData.inv_margin_below_10;
+    const band10to20Orders = latestInvoiceData.inv_margin_10_to_20;
+    const above20Orders = latestInvoiceData.inv_margin_above_20;
     
     const below10Value = totalOrders > 0 ? totalValue * (below10Orders / totalOrders) : 0;
     const band10to20Value = totalOrders > 0 ? totalValue * (band10to20Orders / totalOrders) : 0;
