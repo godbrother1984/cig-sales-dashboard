@@ -1,4 +1,3 @@
-
 import { SalesData, MarginBand, MonthlyData } from '../types';
 import { DynamicsApiResponse } from '../services/dynamicsApiService';
 
@@ -20,7 +19,7 @@ interface BusinessUnitTotals {
   [businessUnit: string]: {
     amount: number;
     orders: number;
-    margin: number;
+    grossProfit: number; // Changed from 'margin' to 'grossProfit'
   };
 }
 
@@ -41,6 +40,10 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
   
   console.log('Original invoice data count:', invoiceData.length);
   console.log('Original sales order data count:', salesOrderData.length);
+  
+  // Log sample data to understand structure
+  console.log('Sample invoice data:', invoiceData.slice(0, 2));
+  console.log('Sample sales order data:', salesOrderData.slice(0, 2));
   
   // Log all unique business units in the API data
   const allBusinessUnits = new Set();
@@ -73,10 +76,11 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
       ...item,
       businessUnit: mappedBU,
       originalBU: item.bu, // Keep original for debugging
-      // Ensure numeric fields are numbers
+      // Ensure numeric fields are numbers - FIXED: Use gross_profit instead of margin for GP
       total_inv: Number(item.total_inv) || 0,
       total_inv_amount: Number(item.total_inv_amount) || 0,
-      margin: Number(item.margin) || 0,
+      gross_profit: Number(item.gross_profit) || 0, // Use gross_profit field
+      margin: Number(item.margin) || 0, // Keep margin for margin bands
       inv_margin_below_10: Number(item.inv_margin_below_10) || 0,
       inv_margin_10_to_20: Number(item.inv_margin_10_to_20) || 0,
       inv_margin_above_20: Number(item.inv_margin_above_20) || 0
@@ -93,10 +97,11 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
       ...item,
       businessUnit: mappedBU,
       originalBU: item.bu, // Keep original for debugging
-      // Ensure numeric fields are numbers
+      // Ensure numeric fields are numbers - FIXED: Use gross_profit instead of margin for GP
       total_so: Number(item.total_so) || 0,
       total_so_amount: Number(item.total_so_amount) || 0,
-      margin: Number(item.margin) || 0
+      gross_profit: Number(item.gross_profit) || 0, // Use gross_profit field
+      margin: Number(item.margin) || 0 // Keep margin for margin bands
     };
   }).filter(item => item !== null);
   
@@ -130,6 +135,38 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
     filteredSalesOrderCount: filteredSalesOrderData.length
   });
   
+  // Log detailed data by business unit and month for debugging
+  console.log('=== DETAILED DATA ANALYSIS ===');
+  const dataByBUAndMonth: { [key: string]: { [key: string]: any } } = {};
+  
+  filteredInvoiceData.forEach(item => {
+    const key = `${item.businessUnit}-${item.month}`;
+    if (!dataByBUAndMonth[key]) {
+      dataByBUAndMonth[key] = { invoices: [], salesOrders: [] };
+    }
+    dataByBUAndMonth[key].invoices.push({
+      amount: item.total_inv_amount,
+      orders: item.total_inv,
+      grossProfit: item.gross_profit,
+      margin: item.margin
+    });
+  });
+  
+  filteredSalesOrderData.forEach(item => {
+    const key = `${item.businessUnit}-${item.month}`;
+    if (!dataByBUAndMonth[key]) {
+      dataByBUAndMonth[key] = { invoices: [], salesOrders: [] };
+    }
+    dataByBUAndMonth[key].salesOrders.push({
+      amount: item.total_so_amount,
+      orders: item.total_so,
+      grossProfit: item.gross_profit,
+      margin: item.margin
+    });
+  });
+  
+  console.log('Data by Business Unit and Month:', dataByBUAndMonth);
+  
   // Log aggregated totals by business unit for debugging
   const invoiceTotalsByBU: BusinessUnitTotals = {};
   const salesOrderTotalsByBU: BusinessUnitTotals = {};
@@ -137,21 +174,21 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
   filteredInvoiceData.forEach(item => {
     const bu = item.businessUnit;
     if (!invoiceTotalsByBU[bu]) {
-      invoiceTotalsByBU[bu] = { amount: 0, orders: 0, margin: 0 };
+      invoiceTotalsByBU[bu] = { amount: 0, orders: 0, grossProfit: 0 };
     }
     invoiceTotalsByBU[bu].amount += item.total_inv_amount;
     invoiceTotalsByBU[bu].orders += item.total_inv;
-    invoiceTotalsByBU[bu].margin += item.margin;
+    invoiceTotalsByBU[bu].grossProfit += item.gross_profit; // FIXED: Use gross_profit
   });
   
   filteredSalesOrderData.forEach(item => {
     const bu = item.businessUnit;
     if (!salesOrderTotalsByBU[bu]) {
-      salesOrderTotalsByBU[bu] = { amount: 0, orders: 0, margin: 0 };
+      salesOrderTotalsByBU[bu] = { amount: 0, orders: 0, grossProfit: 0 };
     }
     salesOrderTotalsByBU[bu].amount += item.total_so_amount;
     salesOrderTotalsByBU[bu].orders += item.total_so;
-    salesOrderTotalsByBU[bu].margin += item.margin;
+    salesOrderTotalsByBU[bu].grossProfit += item.gross_profit; // FIXED: Use gross_profit
   });
   
   console.log('Invoice totals by business unit:', invoiceTotalsByBU);
@@ -161,10 +198,10 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
   const grandTotals = {
     invoiceAmount: Object.values(invoiceTotalsByBU).reduce((sum, bu) => sum + bu.amount, 0),
     invoiceOrders: Object.values(invoiceTotalsByBU).reduce((sum, bu) => sum + bu.orders, 0),
-    invoiceMargin: Object.values(invoiceTotalsByBU).reduce((sum, bu) => sum + bu.margin, 0),
+    invoiceGrossProfit: Object.values(invoiceTotalsByBU).reduce((sum, bu) => sum + bu.grossProfit, 0), // FIXED
     salesOrderAmount: Object.values(salesOrderTotalsByBU).reduce((sum, bu) => sum + bu.amount, 0),
     salesOrderOrders: Object.values(salesOrderTotalsByBU).reduce((sum, bu) => sum + bu.orders, 0),
-    salesOrderMargin: Object.values(salesOrderTotalsByBU).reduce((sum, bu) => sum + bu.margin, 0)
+    salesOrderGrossProfit: Object.values(salesOrderTotalsByBU).reduce((sum, bu) => sum + bu.grossProfit, 0) // FIXED
   };
   
   console.log('GRAND TOTALS:', grandTotals);
@@ -226,7 +263,7 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
         month: latestMonth,
         total_inv: acc.total_inv + (Number(item.total_inv) || 0),
         total_inv_amount: acc.total_inv_amount + (Number(item.total_inv_amount) || 0),
-        margin: acc.margin + (Number(item.margin) || 0),
+        gross_profit: acc.gross_profit + (Number(item.gross_profit) || 0), // FIXED: Use gross_profit
         inv_margin_below_10: acc.inv_margin_below_10 + (Number(item.inv_margin_below_10) || 0),
         inv_margin_10_to_20: acc.inv_margin_10_to_20 + (Number(item.inv_margin_10_to_20) || 0),
         inv_margin_above_20: acc.inv_margin_above_20 + (Number(item.inv_margin_above_20) || 0)
@@ -235,7 +272,7 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
       month: latestMonth,
       total_inv: 0,
       total_inv_amount: 0,
-      margin: 0,
+      gross_profit: 0, // FIXED: Use gross_profit
       inv_margin_below_10: 0,
       inv_margin_10_to_20: 0,
       inv_margin_above_20: 0
@@ -249,13 +286,13 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
         month: latestMonth,
         total_so: acc.total_so + (Number(item.total_so) || 0),
         total_so_amount: acc.total_so_amount + (Number(item.total_so_amount) || 0),
-        margin: acc.margin + (Number(item.margin) || 0)
+        gross_profit: acc.gross_profit + (Number(item.gross_profit) || 0) // FIXED: Use gross_profit
       };
     }, {
       month: latestMonth,
       total_so: 0,
       total_so_amount: 0,
-      margin: 0
+      gross_profit: 0 // FIXED: Use gross_profit
     });
   
   console.log('Latest month aggregated data:', {
@@ -275,14 +312,14 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
   if (latestMonth) {
     const invoiceAmount = Number(latestInvoiceData?.total_inv_amount) || 0;
     const salesOrderAmount = Number(latestSalesOrderData?.total_so_amount) || 0;
-    const invoiceGP = Number(latestInvoiceData?.margin) || 0;
-    const salesOrderGP = Number(latestSalesOrderData?.margin) || 0;
+    const invoiceGP = Number(latestInvoiceData?.gross_profit) || 0; // FIXED: Use gross_profit
+    const salesOrderGP = Number(latestSalesOrderData?.gross_profit) || 0; // FIXED: Use gross_profit
     const invoiceOrders = Number(latestInvoiceData?.total_inv) || 0;
     const salesOrderOrders = Number(latestSalesOrderData?.total_so) || 0;
     
     currentMonthTotals.totalSales = invoiceAmount + salesOrderAmount;
     currentMonthTotals.totalGP = invoiceGP + salesOrderGP;
-    currentMonthTotals.totalOrders = invoiceOrders + salesOrderOrders;
+    currentMonthTotals.totalOrders = invoiceOrders + salesOrderOrders; // CONFIRMED: total_inv + total_so
     currentMonthTotals.averageMargin = currentMonthTotals.totalSales > 0 ? 
       (currentMonthTotals.totalGP / currentMonthTotals.totalSales) * 100 : 0;
     
@@ -321,10 +358,10 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
         if (!item) return acc;
         return {
           total_inv_amount: acc.total_inv_amount + (Number(item.total_inv_amount) || 0),
-          margin: acc.margin + (Number(item.margin) || 0),
+          gross_profit: acc.gross_profit + (Number(item.gross_profit) || 0), // FIXED: Use gross_profit
           total_inv: acc.total_inv + (Number(item.total_inv) || 0)
         };
-      }, { total_inv_amount: 0, margin: 0, total_inv: 0 });
+      }, { total_inv_amount: 0, gross_profit: 0, total_inv: 0 });
 
     const salesOrderMonthData = filteredSalesOrderData
       .filter(item => item && item.month && item.month.toLowerCase() === monthKey)
@@ -332,14 +369,14 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
         if (!item) return acc;
         return {
           total_so_amount: acc.total_so_amount + (Number(item.total_so_amount) || 0),
-          margin: acc.margin + (Number(item.margin) || 0),
+          gross_profit: acc.gross_profit + (Number(item.gross_profit) || 0), // FIXED: Use gross_profit
           total_so: acc.total_so + (Number(item.total_so) || 0)
         };
-      }, { total_so_amount: 0, margin: 0, total_so: 0 });
+      }, { total_so_amount: 0, gross_profit: 0, total_so: 0 });
     
     // Combine invoice and sales order data
     const totalSales = (Number(invoiceMonthData.total_inv_amount) || 0) + (Number(salesOrderMonthData.total_so_amount) || 0);
-    const totalGP = (Number(invoiceMonthData.margin) || 0) + (Number(salesOrderMonthData.margin) || 0);
+    const totalGP = (Number(invoiceMonthData.gross_profit) || 0) + (Number(salesOrderMonthData.gross_profit) || 0); // FIXED
     const totalOrders = (Number(invoiceMonthData.total_inv) || 0) + (Number(salesOrderMonthData.total_so) || 0);
     
     console.log(`Month ${monthKey} totals:`, { totalSales, totalGP, totalOrders });
@@ -386,7 +423,7 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
     });
   });
 
-  // Transform margin bands from the latest month aggregated data
+  // Transform margin bands from the latest month aggregated data - use margin field for margin bands
   const marginBands: MarginBand[] = [];
   
   if (latestInvoiceData && Number(latestInvoiceData.total_inv_amount) > 0) {
