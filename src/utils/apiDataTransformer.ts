@@ -18,23 +18,58 @@ const mapBusinessUnit = (apiBusinessUnit: string): string => {
 export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) => {
   console.log('Transforming API data:', apiData);
   
-  // Handle the nested structure - get invoice and sales order data
-  const invoiceData = apiData.datas?.invoice || [];
-  const salesOrderData = apiData.datas?.sales_order || [];
+  // Add null/undefined checks for API data
+  if (!apiData || typeof apiData !== 'object') {
+    console.warn('Invalid API data received, using empty structure');
+    return getEmptyDataStructure();
+  }
+  
+  // Handle the nested structure - get invoice and sales order data with fallbacks
+  const invoiceData = Array.isArray(apiData.datas?.invoice) ? apiData.datas.invoice : [];
+  const salesOrderData = Array.isArray(apiData.datas?.sales_order) ? apiData.datas.sales_order : [];
   
   console.log('Invoice data:', invoiceData);
   console.log('Sales order data:', salesOrderData);
   
-  // Apply business unit mapping to data
-  const processedInvoiceData = invoiceData.map(item => ({
-    ...item,
-    businessUnit: mapBusinessUnit(item.bu || 'Coil')
-  }));
+  // If both arrays are empty, return empty structure
+  if (invoiceData.length === 0 && salesOrderData.length === 0) {
+    console.log('No data found in API response, using empty structure');
+    return getEmptyDataStructure();
+  }
   
-  const processedSalesOrderData = salesOrderData.map(item => ({
-    ...item,
-    businessUnit: mapBusinessUnit(item.bu || 'Coil')
-  }));
+  // Apply business unit mapping to data with null checks
+  const processedInvoiceData = invoiceData.map(item => {
+    if (!item || typeof item !== 'object') {
+      console.warn('Invalid invoice item:', item);
+      return null;
+    }
+    return {
+      ...item,
+      businessUnit: mapBusinessUnit(item.bu || 'Coil'),
+      // Ensure numeric fields are numbers
+      total_inv: Number(item.total_inv) || 0,
+      total_inv_amount: Number(item.total_inv_amount) || 0,
+      margin: Number(item.margin) || 0,
+      inv_margin_below_10: Number(item.inv_margin_below_10) || 0,
+      inv_margin_10_to_20: Number(item.inv_margin_10_to_20) || 0,
+      inv_margin_above_20: Number(item.inv_margin_above_20) || 0
+    };
+  }).filter(item => item !== null);
+  
+  const processedSalesOrderData = salesOrderData.map(item => {
+    if (!item || typeof item !== 'object') {
+      console.warn('Invalid sales order item:', item);
+      return null;
+    }
+    return {
+      ...item,
+      businessUnit: mapBusinessUnit(item.bu || 'Coil'),
+      // Ensure numeric fields are numbers
+      total_so: Number(item.total_so) || 0,
+      total_so_amount: Number(item.total_so_amount) || 0,
+      margin: Number(item.margin) || 0
+    };
+  }).filter(item => item !== null);
   
   console.log('Processed data with BU mapping:', { processedInvoiceData, processedSalesOrderData });
   
@@ -46,11 +81,25 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   
   // Extract all unique months that actually exist in the API data
   const availableMonths = new Set<string>();
-  processedInvoiceData.forEach(item => availableMonths.add(item.month));
-  processedSalesOrderData.forEach(item => availableMonths.add(item.month));
+  processedInvoiceData.forEach(item => {
+    if (item && item.month && typeof item.month === 'string') {
+      availableMonths.add(item.month.toLowerCase());
+    }
+  });
+  processedSalesOrderData.forEach(item => {
+    if (item && item.month && typeof item.month === 'string') {
+      availableMonths.add(item.month.toLowerCase());
+    }
+  });
   
   const availableMonthsArray = Array.from(availableMonths);
   console.log('Available months in API data:', availableMonthsArray);
+  
+  // If no valid months found, return empty structure
+  if (availableMonthsArray.length === 0) {
+    console.log('No valid months found in API data, using empty structure');
+    return getEmptyDataStructure();
+  }
   
   // Find the chronologically latest month from the available data
   let latestMonth = '';
@@ -66,18 +115,27 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   
   console.log(`Latest month found: ${latestMonth} (order: ${latestMonthOrder})`);
   
+  // If no valid latest month found, use the first available month
+  if (!latestMonth && availableMonthsArray.length > 0) {
+    latestMonth = availableMonthsArray[0];
+    console.log(`Using first available month as fallback: ${latestMonth}`);
+  }
+  
   // Aggregate data for the latest month across all business units
   const latestInvoiceData = processedInvoiceData
-    .filter(item => item.month === latestMonth)
-    .reduce((acc, item) => ({
-      month: latestMonth,
-      total_inv: acc.total_inv + item.total_inv,
-      total_inv_amount: acc.total_inv_amount + item.total_inv_amount,
-      margin: acc.margin + item.margin,
-      inv_margin_below_10: acc.inv_margin_below_10 + item.inv_margin_below_10,
-      inv_margin_10_to_20: acc.inv_margin_10_to_20 + item.inv_margin_10_to_20,
-      inv_margin_above_20: acc.inv_margin_above_20 + item.inv_margin_above_20
-    }), {
+    .filter(item => item && item.month && item.month.toLowerCase() === latestMonth)
+    .reduce((acc, item) => {
+      if (!item) return acc;
+      return {
+        month: latestMonth,
+        total_inv: acc.total_inv + (Number(item.total_inv) || 0),
+        total_inv_amount: acc.total_inv_amount + (Number(item.total_inv_amount) || 0),
+        margin: acc.margin + (Number(item.margin) || 0),
+        inv_margin_below_10: acc.inv_margin_below_10 + (Number(item.inv_margin_below_10) || 0),
+        inv_margin_10_to_20: acc.inv_margin_10_to_20 + (Number(item.inv_margin_10_to_20) || 0),
+        inv_margin_above_20: acc.inv_margin_above_20 + (Number(item.inv_margin_above_20) || 0)
+      };
+    }, {
       month: latestMonth,
       total_inv: 0,
       total_inv_amount: 0,
@@ -88,13 +146,16 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
     });
 
   const latestSalesOrderData = processedSalesOrderData
-    .filter(item => item.month === latestMonth)
-    .reduce((acc, item) => ({
-      month: latestMonth,
-      total_so: acc.total_so + item.total_so,
-      total_so_amount: acc.total_so_amount + item.total_so_amount,
-      margin: acc.margin + item.margin
-    }), {
+    .filter(item => item && item.month && item.month.toLowerCase() === latestMonth)
+    .reduce((acc, item) => {
+      if (!item) return acc;
+      return {
+        month: latestMonth,
+        total_so: acc.total_so + (Number(item.total_so) || 0),
+        total_so_amount: acc.total_so_amount + (Number(item.total_so_amount) || 0),
+        margin: acc.margin + (Number(item.margin) || 0)
+      };
+    }, {
       month: latestMonth,
       total_so: 0,
       total_so_amount: 0,
@@ -113,12 +174,12 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   };
   
   if (latestMonth) {
-    const invoiceAmount = latestInvoiceData?.total_inv_amount || 0;
-    const salesOrderAmount = latestSalesOrderData?.total_so_amount || 0;
-    const invoiceGP = latestInvoiceData?.margin || 0;
-    const salesOrderGP = latestSalesOrderData?.margin || 0;
-    const invoiceOrders = latestInvoiceData?.total_inv || 0;
-    const salesOrderOrders = latestSalesOrderData?.total_so || 0;
+    const invoiceAmount = Number(latestInvoiceData?.total_inv_amount) || 0;
+    const salesOrderAmount = Number(latestSalesOrderData?.total_so_amount) || 0;
+    const invoiceGP = Number(latestInvoiceData?.margin) || 0;
+    const salesOrderGP = Number(latestSalesOrderData?.margin) || 0;
+    const invoiceOrders = Number(latestInvoiceData?.total_inv) || 0;
+    const salesOrderOrders = Number(latestSalesOrderData?.total_so) || 0;
     
     currentMonthTotals.totalSales = invoiceAmount + salesOrderAmount;
     currentMonthTotals.totalGP = invoiceGP + salesOrderGP;
@@ -155,25 +216,31 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   sortedAvailableMonths.forEach(monthKey => {
     // Aggregate data for this month across all business units
     const invoiceMonthData = processedInvoiceData
-      .filter(item => item.month === monthKey)
-      .reduce((acc, item) => ({
-        total_inv_amount: acc.total_inv_amount + item.total_inv_amount,
-        margin: acc.margin + item.margin,
-        total_inv: acc.total_inv + item.total_inv
-      }), { total_inv_amount: 0, margin: 0, total_inv: 0 });
+      .filter(item => item && item.month && item.month.toLowerCase() === monthKey)
+      .reduce((acc, item) => {
+        if (!item) return acc;
+        return {
+          total_inv_amount: acc.total_inv_amount + (Number(item.total_inv_amount) || 0),
+          margin: acc.margin + (Number(item.margin) || 0),
+          total_inv: acc.total_inv + (Number(item.total_inv) || 0)
+        };
+      }, { total_inv_amount: 0, margin: 0, total_inv: 0 });
 
     const salesOrderMonthData = processedSalesOrderData
-      .filter(item => item.month === monthKey)
-      .reduce((acc, item) => ({
-        total_so_amount: acc.total_so_amount + item.total_so_amount,
-        margin: acc.margin + item.margin,
-        total_so: acc.total_so + item.total_so
-      }), { total_so_amount: 0, margin: 0, total_so: 0 });
+      .filter(item => item && item.month && item.month.toLowerCase() === monthKey)
+      .reduce((acc, item) => {
+        if (!item) return acc;
+        return {
+          total_so_amount: acc.total_so_amount + (Number(item.total_so_amount) || 0),
+          margin: acc.margin + (Number(item.margin) || 0),
+          total_so: acc.total_so + (Number(item.total_so) || 0)
+        };
+      }, { total_so_amount: 0, margin: 0, total_so: 0 });
     
     // Combine invoice and sales order data
-    const totalSales = invoiceMonthData.total_inv_amount + salesOrderMonthData.total_so_amount;
-    const totalGP = invoiceMonthData.margin + salesOrderMonthData.margin;
-    const totalOrders = invoiceMonthData.total_inv + salesOrderMonthData.total_so;
+    const totalSales = (Number(invoiceMonthData.total_inv_amount) || 0) + (Number(salesOrderMonthData.total_so_amount) || 0);
+    const totalGP = (Number(invoiceMonthData.margin) || 0) + (Number(salesOrderMonthData.margin) || 0);
+    const totalOrders = (Number(invoiceMonthData.total_inv) || 0) + (Number(salesOrderMonthData.total_so) || 0);
     
     monthlyTrend.push({
       month: monthKey.charAt(0).toUpperCase() + monthKey.slice(1), // Capitalize first letter
@@ -220,13 +287,13 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse) =
   // Transform margin bands from the latest month aggregated data
   const marginBands: MarginBand[] = [];
   
-  if (latestInvoiceData && latestInvoiceData.total_inv_amount > 0) {
-    const totalValue = latestInvoiceData.total_inv_amount;
-    const totalOrders = latestInvoiceData.total_inv;
+  if (latestInvoiceData && Number(latestInvoiceData.total_inv_amount) > 0) {
+    const totalValue = Number(latestInvoiceData.total_inv_amount) || 0;
+    const totalOrders = Number(latestInvoiceData.total_inv) || 0;
     
-    const below10Orders = latestInvoiceData.inv_margin_below_10;
-    const band10to20Orders = latestInvoiceData.inv_margin_10_to_20;
-    const above20Orders = latestInvoiceData.inv_margin_above_20;
+    const below10Orders = Number(latestInvoiceData.inv_margin_below_10) || 0;
+    const band10to20Orders = Number(latestInvoiceData.inv_margin_10_to_20) || 0;
+    const above20Orders = Number(latestInvoiceData.inv_margin_above_20) || 0;
     
     const below10Value = totalOrders > 0 ? totalValue * (below10Orders / totalOrders) : 0;
     const band10to20Value = totalOrders > 0 ? totalValue * (band10to20Orders / totalOrders) : 0;
