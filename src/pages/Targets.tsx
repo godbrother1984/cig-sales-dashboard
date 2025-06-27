@@ -121,29 +121,42 @@ const Targets = () => {
               </TabsContent>
               
               <TabsContent value="annual" className="space-y-6">
-                <AnnualTargetsInput
-                  annualSales={currentTargets.annualTargets.sales}
-                  annualGP={currentTargets.annualTargets.gp}
-                  distribution={currentTargets.annualTargets.distribution}
-                  weights={('weights' in currentTargets.annualTargets) ? currentTargets.annualTargets.weights || [] : []}
-                  onAnnualSalesChange={(value) => {
-                    const newAnnualTargets = { ...currentTargets.annualTargets, sales: value };
-                    updateCurrentTargets({ annualTargets: newAnnualTargets });
-                  }}
-                  onAnnualGPChange={(value) => {
-                    const newAnnualTargets = { ...currentTargets.annualTargets, gp: value };
-                    updateCurrentTargets({ annualTargets: newAnnualTargets });
-                  }}
-                  onDistributionChange={(distribution) => {
-                    const newAnnualTargets = { ...currentTargets.annualTargets, distribution };
-                    updateCurrentTargets({ annualTargets: newAnnualTargets });
-                  }}
-                  onWeightsChange={(weights) => {
-                    const newAnnualTargets = { ...currentTargets.annualTargets, weights };
-                    updateCurrentTargets({ annualTargets: newAnnualTargets });
-                  }}
-                  onPreviewMonthly={handlePreviewMonthly}
-                />
+                {!previewMode ? (
+                  <AnnualTargetsInput
+                    annualSales={currentTargets.annualTargets.sales}
+                    annualGP={currentTargets.annualTargets.gp}
+                    distribution={currentTargets.annualTargets.distribution}
+                    weights={('weights' in currentTargets.annualTargets) ? currentTargets.annualTargets.weights || [] : []}
+                    onAnnualSalesChange={(value) => {
+                      const newAnnualTargets = { ...currentTargets.annualTargets, sales: value };
+                      updateCurrentTargets({ annualTargets: newAnnualTargets });
+                    }}
+                    onAnnualGPChange={(value) => {
+                      const newAnnualTargets = { ...currentTargets.annualTargets, gp: value };
+                      updateCurrentTargets({ annualTargets: newAnnualTargets });
+                    }}
+                    onDistributionChange={(distribution) => {
+                      const newAnnualTargets = { ...currentTargets.annualTargets, distribution };
+                      updateCurrentTargets({ annualTargets: newAnnualTargets });
+                    }}
+                    onWeightsChange={(weights) => {
+                      const newAnnualTargets = { ...currentTargets.annualTargets, weights };
+                      updateCurrentTargets({ annualTargets: newAnnualTargets });
+                    }}
+                    onPreviewMonthly={handlePreviewMonthly}
+                  />
+                ) : (
+                  previewTargets && (
+                    <MonthlyPreview
+                      previewTargets={previewTargets}
+                      onApplyPreview={handleApplyPreview}
+                      onCancelPreview={() => {
+                        console.log('Canceling preview'); // Debug log
+                        setPreviewMode(false);
+                      }}
+                    />
+                  )
+                )}
               </TabsContent>
             </Tabs>
 
