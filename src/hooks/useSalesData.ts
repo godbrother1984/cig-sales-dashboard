@@ -17,8 +17,13 @@ export const useSalesData = (
   const [apiError, setApiError] = useState<string | null>(null);
 
   const loadManualOrders = (): ManualOrder[] => {
-    const savedOrders = localStorage.getItem('manualOrders');
-    return savedOrders ? JSON.parse(savedOrders) : [];
+    try {
+      const savedOrders = localStorage.getItem('manualOrders');
+      return savedOrders ? JSON.parse(savedOrders) : [];
+    } catch (error) {
+      console.error('Error loading manual orders from localStorage:', error);
+      return [];
+    }
   };
 
   const fetchDataFromApi = async () => {
@@ -72,8 +77,11 @@ export const useSalesData = (
     const fetchSalesData = async () => {
       setIsLoading(true);
       try {
+        console.log('Starting to fetch sales data...');
         const dynamicsData = await fetchDataFromApi();
         const manualOrders = loadManualOrders();
+        
+        console.log('Combining data with manual orders...');
         const combinedData = combineDataWithManualOrders(
           dynamicsData, 
           manualOrders, 
@@ -82,6 +90,8 @@ export const useSalesData = (
           viewMode, 
           targets
         );
+        
+        console.log('Data combination completed, setting sales data...');
         setSalesData(combinedData);
       } catch (error) {
         console.error('Error in fetchSalesData:', error);
@@ -94,18 +104,30 @@ export const useSalesData = (
         });
         
         // Fallback to empty data structure instead of sample data
-        const dynamicsData = getEmptyDataStructure();
-        const manualOrders = loadManualOrders();
-        const combinedData = combineDataWithManualOrders(
-          dynamicsData, 
-          manualOrders, 
-          filters, 
-          selectedMonth, 
-          viewMode, 
-          targets
-        );
-        setSalesData(combinedData);
+        try {
+          const dynamicsData = getEmptyDataStructure();
+          const manualOrders = loadManualOrders();
+          const combinedData = combineDataWithManualOrders(
+            dynamicsData, 
+            manualOrders, 
+            filters, 
+            selectedMonth, 
+            viewMode, 
+            targets
+          );
+          setSalesData(combinedData);
+        } catch (fallbackError) {
+          console.error('Even fallback failed:', fallbackError);
+          // Set minimal data to prevent infinite loading
+          setSalesData({
+            currentMonth: { totalSales: 0, totalGP: 0, totalOrders: 0, averageMargin: 0 },
+            targets: targets,
+            marginBands: [],
+            monthlyTrend: []
+          });
+        }
       } finally {
+        console.log('Setting loading to false');
         setIsLoading(false);
       }
     };
