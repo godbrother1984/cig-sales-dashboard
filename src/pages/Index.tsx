@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { KPISummary } from '../components/KPISummary';
 import { TargetActualChart } from '../components/TargetActualChart';
@@ -14,6 +13,7 @@ import { Targets, DashboardFilters as DashboardFiltersType } from '../types';
 import { Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { getCurrentMonthIndex } from '../utils/monthAvailability';
 
 const Index = () => {
   const [targets, setTargets] = useState<Targets>({
@@ -24,7 +24,9 @@ const Index = () => {
     ytdSales: 15000000,
     ytdGP: 3500000
   });
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  
+  // Set initial selected month to current month instead of always using current date
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthIndex());
   const [viewMode, setViewMode] = useState('monthly');
   const [filters, setFilters] = useState<DashboardFiltersType>({
     businessUnit: 'all',
@@ -95,6 +97,7 @@ const Index = () => {
             selectedMonth={selectedMonth}
             onViewModeChange={setViewMode}
             onMonthChange={setSelectedMonth}
+            salesData={salesData}
           />
           
           <Dialog>

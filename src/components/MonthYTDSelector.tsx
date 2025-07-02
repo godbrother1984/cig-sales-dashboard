@@ -2,12 +2,14 @@
 import React from 'react';
 import { Card, CardContent } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { getAvailableMonths } from '../utils/monthAvailability';
 
 interface MonthYTDSelectorProps {
   viewMode: string;
   selectedMonth: number;
   onViewModeChange: (mode: string) => void;
   onMonthChange: (month: number) => void;
+  salesData?: any;
 }
 
 const months = [
@@ -26,8 +28,22 @@ export const MonthYTDSelector: React.FC<MonthYTDSelectorProps> = ({
   viewMode,
   selectedMonth,
   onViewModeChange,
-  onMonthChange
+  onMonthChange,
+  salesData
 }) => {
+  // Get manual orders from localStorage
+  const getManualOrders = () => {
+    try {
+      const savedOrders = localStorage.getItem('manualOrders');
+      return savedOrders ? JSON.parse(savedOrders) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const manualOrders = getManualOrders();
+  const availableMonthIndices = getAvailableMonths(salesData, manualOrders);
+
   const getDisplayTitle = () => {
     if (viewMode === 'monthly') {
       return `${months[selectedMonth]} 2025`;
@@ -65,7 +81,9 @@ export const MonthYTDSelector: React.FC<MonthYTDSelectorProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     {months.map((month, index) => (
-                      <SelectItem key={index} value={index.toString()}>{month}</SelectItem>
+                      availableMonthIndices.includes(index) && (
+                        <SelectItem key={index} value={index.toString()}>{month}</SelectItem>
+                      )
                     ))}
                   </SelectContent>
                 </Select>
@@ -77,7 +95,9 @@ export const MonthYTDSelector: React.FC<MonthYTDSelectorProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     {months.map((month, index) => (
-                      <SelectItem key={index} value={index.toString()}>{month}</SelectItem>
+                      availableMonthIndices.includes(index) && (
+                        <SelectItem key={index} value={index.toString()}>{month}</SelectItem>
+                      )
                     ))}
                   </SelectContent>
                 </Select>

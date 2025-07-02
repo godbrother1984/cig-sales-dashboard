@@ -14,6 +14,7 @@ import {
   generateMonthlyTrend 
 } from './monthlyTrendGenerator';
 import { generateMarginBands } from './marginBandsGenerator';
+import { getCurrentMonthIndex } from './monthAvailability';
 
 export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, businessUnitFilter?: string) => {
   console.log('=== API Data Transformation Debug ===');
@@ -201,6 +202,10 @@ const calculateCurrentMonthTotals = (
 
 export const getEmptyDataStructure = () => {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const currentMonthIndex = getCurrentMonthIndex();
+  
+  // Only return months up to the current month
+  const availableMonths = months.slice(0, currentMonthIndex + 1);
   
   return {
     currentMonth: {
@@ -214,7 +219,7 @@ export const getEmptyDataStructure = () => {
       { band: '10-20%', orders: 0, value: 0, percentage: 0 },
       { band: '>20%', orders: 0, value: 0, percentage: 0 }
     ],
-    monthlyTrend: months.map(month => ({
+    monthlyTrend: availableMonths.map(month => ({
       month,
       sales: 0,
       gp: 0,
