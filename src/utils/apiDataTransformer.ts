@@ -1,4 +1,3 @@
-
 import { SalesData, MarginBand, MonthlyData } from '../types';
 import { DynamicsApiResponse } from '../services/dynamicsApiService';
 import { logBusinessUnits } from './businessUnitMapper';
@@ -220,16 +219,8 @@ export const getEmptyDataStructure = () => {
       sales: 0,
       gp: 0,
       totalOrders: 0,
-      salespeople: {
-        'John Smith': { sales: 0, gp: 0, orders: 0 },
-        'Sarah Johnson': { sales: 0, gp: 0, orders: 0 },
-        'Mike Chen': { sales: 0, gp: 0, orders: 0 }
-      },
-      customers: {
-        'Toyota Motor Thailand': { sales: 0, gp: 0, orders: 0 },
-        'Honda Automobile Thailand': { sales: 0, gp: 0, orders: 0 },
-        'Isuzu Motors': { sales: 0, gp: 0, orders: 0 }
-      }
+      salespeople: {},
+      customers: {}
     }))
   };
 };

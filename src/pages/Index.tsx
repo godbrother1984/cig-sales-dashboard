@@ -113,7 +113,11 @@ const Index = () => {
           </Dialog>
         </div>
 
-        <DashboardFilters filters={filters} onFilterChange={setFilters} />
+        <DashboardFilters 
+          filters={filters} 
+          onFilterChange={setFilters}
+          salesData={salesData}
+        />
 
         <KPISummary 
           data={salesData.currentMonth}
