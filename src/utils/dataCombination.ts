@@ -148,11 +148,20 @@ export const combineDataWithManualOrders = (
     
     // Get manual orders for this specific month that match the current business unit filter
     const monthManualOrders = manualOrders.filter(order => {
+      // Skip orders without valid business unit data
+      if (!order || !order.businessUnit) {
+        return false;
+      }
+      
       const orderDate = new Date(order.orderDate);
       const orderMonth = orderDate.getMonth();
       
       // Apply the same business unit filter logic as used in filterManualOrders
-      const normalizeBusinessUnit = (businessUnit: string): string => {
+      const normalizeBusinessUnit = (businessUnit: string | undefined): string => {
+        if (!businessUnit) {
+          return 'Coil'; // Default business unit
+        }
+        
         const mapping: { [key: string]: string } = {
           'coil': 'Coil',
           'unit': 'Unit', 

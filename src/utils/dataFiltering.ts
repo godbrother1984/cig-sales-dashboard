@@ -3,7 +3,13 @@ import { ManualOrder, DashboardFilters } from '../types';
 import { getQuarterMonths } from './quarterUtils';
 
 // Business unit mapping to ensure consistency between manual orders and API data
-const normalizeBusinessUnit = (businessUnit: string): string => {
+const normalizeBusinessUnit = (businessUnit: string | undefined): string => {
+  // Handle undefined or null business units
+  if (!businessUnit) {
+    console.warn('Business unit is undefined, defaulting to Coil');
+    return 'Coil'; // Default business unit
+  }
+  
   // Ensure consistent business unit naming
   const mapping: { [key: string]: string } = {
     'coil': 'Coil',
@@ -33,6 +39,12 @@ export const filterManualOrders = (
   }, {} as { [key: string]: number }));
   
   return orders.filter(order => {
+    // Skip orders without valid business unit data
+    if (!order || !order.businessUnit) {
+      console.warn('Skipping order with invalid business unit:', order);
+      return false;
+    }
+    
     const orderDate = new Date(order.orderDate);
     const orderMonth = orderDate.getMonth();
     
