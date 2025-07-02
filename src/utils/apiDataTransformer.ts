@@ -1,13 +1,10 @@
 
-import { SalesData, MarginBand, MonthlyData } from '../types';
 import { DynamicsApiResponse } from '../services/dynamicsApiService';
 import { logBusinessUnits } from './businessUnitMapper';
 import { 
   processInvoiceData, 
   processSalesOrderData, 
-  filterDataByBusinessUnit,
-  ProcessedInvoiceItem,
-  ProcessedSalesOrderItem
+  filterDataByBusinessUnit
 } from './apiDataProcessor';
 import { 
   getAvailableMonths, 
@@ -18,29 +15,19 @@ import { generateMarginBands } from './marginBandsGenerator';
 import { aggregateLatestMonthData } from './dataAggregation';
 import { calculateCurrentMonthTotals } from './monthTotalsCalculator';
 import { getEmptyDataStructure } from './emptyDataStructure';
+import { validateApiData } from './apiDataValidator';
 
 export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, businessUnitFilter?: string) => {
   console.log('=== API Data Transformation Debug ===');
   console.log('Business unit filter:', businessUnitFilter);
   
-  // Add null/undefined checks for API data
-  if (!apiData || typeof apiData !== 'object') {
-    console.warn('Invalid API data received, using empty structure');
-    return getEmptyDataStructure();
+  // Validate API data
+  const validation = validateApiData(apiData);
+  if (!validation.isValid) {
+    return validation.emptyData;
   }
   
-  // Handle the nested structure - get invoice and sales order data with fallbacks
-  const invoiceData = Array.isArray(apiData.datas?.invoice) ? apiData.datas.invoice : [];
-  const salesOrderData = Array.isArray(apiData.datas?.sales_order) ? apiData.datas.sales_order : [];
-  
-  console.log('Original invoice data count:', invoiceData.length);
-  console.log('Original sales order data count:', salesOrderData.length);
-  
-  // If both arrays are empty, return empty structure
-  if (invoiceData.length === 0 && salesOrderData.length === 0) {
-    console.log('No data found in API response, using empty structure');
-    return getEmptyDataStructure();
-  }
+  const { invoiceData, salesOrderData } = validation;
   
   // Log all unique business units in the API data BEFORE mapping
   logBusinessUnits(invoiceData, 'Original invoice');
