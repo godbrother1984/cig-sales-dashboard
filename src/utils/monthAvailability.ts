@@ -6,6 +6,10 @@ export const getCurrentMonthIndex = (): number => {
 export const getAvailableMonths = (salesData: any, manualOrders: any[]): number[] => {
   const availableMonths: Set<number> = new Set();
   
+  // Always include the current month
+  const currentMonthIndex = getCurrentMonthIndex();
+  availableMonths.add(currentMonthIndex);
+  
   // Add months that have actual API data (non-zero sales or orders)
   if (salesData && salesData.monthlyTrend) {
     salesData.monthlyTrend.forEach((monthData: any) => {
@@ -27,11 +31,6 @@ export const getAvailableMonths = (salesData: any, manualOrders: any[]): number[
         availableMonths.add(orderMonth);
       }
     });
-  }
-  
-  // If no data exists at all, include current month as fallback
-  if (availableMonths.size === 0) {
-    availableMonths.add(getCurrentMonthIndex());
   }
   
   return Array.from(availableMonths).sort((a, b) => a - b);

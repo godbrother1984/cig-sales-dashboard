@@ -36,9 +36,30 @@ export const combineDataWithManualOrders = (
       orders: manualOrderCount
     });
 
-    // The Dynamics data has already been filtered by business unit in the transformer
-    // So we use it directly without additional business unit filtering
-    const monthlyData = dynamicsData.monthlyTrend;
+    // Ensure monthly trend includes current month even with zero data
+    const currentMonthIndex = new Date().getMonth();
+    const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    const currentMonthName = monthNames[currentMonthIndex];
+    
+    let monthlyData = [...dynamicsData.monthlyTrend];
+    
+    // Check if current month exists in the data, if not add it with zero values
+    const currentMonthExists = monthlyData.some(month => month.month.toLowerCase() === currentMonthName);
+    if (!currentMonthExists) {
+      // Insert current month with zero values at the appropriate position
+      const currentMonthData = {
+        month: currentMonthName,
+        sales: 0,
+        gp: 0,
+        totalOrders: 0,
+        salespeople: {},
+        customers: {}
+      };
+      
+      // Insert in the correct chronological position
+      monthlyData.splice(currentMonthIndex, 0, currentMonthData);
+    }
+
     let baseData: SalesData;
 
     console.log('Base dynamics data (current month):', dynamicsData.currentMonth);
@@ -70,7 +91,7 @@ export const combineDataWithManualOrders = (
       };
     } else {
       const currentMonthIndex = Math.min(selectedMonth, monthlyData.length - 1);
-      const currentMonthData = monthlyData[currentMonthIndex];
+      const currentMonthData = monthlyData[currentMonthIndex] || { sales: 0, gp: 0, totalOrders: 0, salespeople: {}, customers: {} };
       baseData = {
         totalSales: currentMonthData.sales,
         totalGP: currentMonthData.gp,
@@ -84,7 +105,7 @@ export const combineDataWithManualOrders = (
     if (filters.salesperson !== 'all' && viewMode === 'monthly') {
       const currentMonthIndex = Math.min(selectedMonth, monthlyData.length - 1);
       const currentMonthData = monthlyData[currentMonthIndex];
-      if (currentMonthData.salespeople[filters.salesperson]) {
+      if (currentMonthData && currentMonthData.salespeople[filters.salesperson]) {
         const salespersonData = currentMonthData.salespeople[filters.salesperson];
         baseData = {
           totalSales: salespersonData.sales,
@@ -98,7 +119,7 @@ export const combineDataWithManualOrders = (
     if (filters.customerName !== 'all' && viewMode === 'monthly') {
       const currentMonthIndex = Math.min(selectedMonth, monthlyData.length - 1);
       const currentMonthData = monthlyData[currentMonthIndex];
-      if (currentMonthData.customers[filters.customerName]) {
+      if (currentMonthData && currentMonthData.customers[filters.customerName]) {
         const customerData = currentMonthData.customers[filters.customerName];
         baseData = {
           totalSales: customerData.sales,
