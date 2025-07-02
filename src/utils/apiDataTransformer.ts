@@ -219,13 +219,6 @@ export const getEmptyDataStructure = () => {
       { band: '10-20%', orders: 0, value: 0, percentage: 0 },
       { band: '>20%', orders: 0, value: 0, percentage: 0 }
     ],
-    monthlyTrend: availableMonths.map(month => ({
-      month,
-      sales: 0,
-      gp: 0,
-      totalOrders: 0,
-      salespeople: {},
-      customers: {}
-    }))
+    monthlyTrend: [] // Empty array - no fake months with zero data
   };
 };
