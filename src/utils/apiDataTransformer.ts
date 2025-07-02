@@ -1,3 +1,4 @@
+
 import { SalesData, MarginBand, MonthlyData } from '../types';
 import { DynamicsApiResponse } from '../services/dynamicsApiService';
 import { logBusinessUnits } from './businessUnitMapper';
@@ -14,7 +15,9 @@ import {
   generateMonthlyTrend 
 } from './monthlyTrendGenerator';
 import { generateMarginBands } from './marginBandsGenerator';
-import { getCurrentMonthIndex } from './monthAvailability';
+import { aggregateLatestMonthData } from './dataAggregation';
+import { calculateCurrentMonthTotals } from './monthTotalsCalculator';
+import { getEmptyDataStructure } from './emptyDataStructure';
 
 export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, businessUnitFilter?: string) => {
   console.log('=== API Data Transformation Debug ===');
@@ -97,128 +100,5 @@ export const transformApiDataToExpectedFormat = (apiData: DynamicsApiResponse, b
   return finalResult;
 };
 
-const aggregateLatestMonthData = (
-  filteredInvoiceData: ProcessedInvoiceItem[],
-  filteredSalesOrderData: ProcessedSalesOrderItem[],
-  latestMonth: string
-) => {
-  console.log(`=== AGGREGATING DATA FOR ${latestMonth.toUpperCase()} ===`);
-  
-  const latestInvoiceData = filteredInvoiceData
-    .filter(item => {
-      const matches = item && item.month && item.month.toLowerCase() === latestMonth;
-      if (matches) {
-        console.log(`Including invoice item for ${latestMonth}: BU=${item.businessUnit}, Amount=${item.total_inv_amount}, Orders=${item.total_inv}, GP=${item.gross_profit}`);
-      }
-      return matches;
-    })
-    .reduce((acc, item) => {
-      if (!item) return acc;
-      console.log(`Adding invoice values: Amount +${item.total_inv_amount}, Orders +${item.total_inv}, GP +${item.gross_profit}`);
-      return {
-        month: latestMonth,
-        total_inv: acc.total_inv + (Number(item.total_inv) || 0),
-        total_inv_amount: acc.total_inv_amount + (Number(item.total_inv_amount) || 0),
-        gross_profit: acc.gross_profit + (Number(item.gross_profit) || 0),
-        inv_margin_below_10: acc.inv_margin_below_10 + (Number(item.inv_margin_below_10) || 0),
-        inv_margin_10_to_20: acc.inv_margin_10_to_20 + (Number(item.inv_margin_10_to_20) || 0),
-        inv_margin_above_20: acc.inv_margin_above_20 + (Number(item.inv_margin_above_20) || 0)
-      };
-    }, {
-      month: latestMonth,
-      total_inv: 0,
-      total_inv_amount: 0,
-      gross_profit: 0,
-      inv_margin_below_10: 0,
-      inv_margin_10_to_20: 0,
-      inv_margin_above_20: 0
-    });
-
-  const latestSalesOrderData = filteredSalesOrderData
-    .filter(item => {
-      const matches = item && item.month && item.month.toLowerCase() === latestMonth;
-      if (matches) {
-        console.log(`Including sales order item for ${latestMonth}: BU=${item.businessUnit}, Amount=${item.total_so_amount}, Orders=${item.total_so}, GP=${item.gross_profit}`);
-      }
-      return matches;
-    })
-    .reduce((acc, item) => {
-      if (!item) return acc;
-      console.log(`Adding sales order values: Amount +${item.total_so_amount}, Orders +${item.total_so}, GP +${item.gross_profit}`);
-      return {
-        month: latestMonth,
-        total_so: acc.total_so + (Number(item.total_so) || 0),
-        total_so_amount: acc.total_so_amount + (Number(item.total_so_amount) || 0),
-        gross_profit: acc.gross_profit + (Number(item.gross_profit) || 0)
-      };
-    }, {
-      month: latestMonth,
-      total_so: 0,
-      total_so_amount: 0,
-      gross_profit: 0
-    });
-  
-  return { latestInvoiceData, latestSalesOrderData };
-};
-
-const calculateCurrentMonthTotals = (
-  latestInvoiceData: any,
-  latestSalesOrderData: any,
-  latestMonth: string,
-  businessUnitFilter?: string
-) => {
-  let currentMonthTotals = {
-    totalSales: 0,
-    totalGP: 0,
-    totalOrders: 0,
-    averageMargin: 0
-  };
-  
-  if (latestMonth) {
-    const invoiceAmount = Number(latestInvoiceData?.total_inv_amount) || 0;
-    const salesOrderAmount = Number(latestSalesOrderData?.total_so_amount) || 0;
-    const invoiceGP = Number(latestInvoiceData?.gross_profit) || 0;
-    const salesOrderGP = Number(latestSalesOrderData?.gross_profit) || 0;
-    const invoiceOrders = Number(latestInvoiceData?.total_inv) || 0;
-    const salesOrderOrders = Number(latestSalesOrderData?.total_so) || 0;
-    
-    currentMonthTotals.totalSales = invoiceAmount + salesOrderAmount;
-    currentMonthTotals.totalGP = invoiceGP + salesOrderGP;
-    currentMonthTotals.totalOrders = invoiceOrders + salesOrderOrders;
-    currentMonthTotals.averageMargin = currentMonthTotals.totalSales > 0 ? 
-      (currentMonthTotals.totalGP / currentMonthTotals.totalSales) * 100 : 0;
-    
-    console.log('=== FINAL CURRENT MONTH TOTALS ===');
-    console.log(`Business Unit Filter: ${businessUnitFilter}`);
-    console.log(`Latest Month: ${latestMonth}`);
-    console.log(`Total Sales: ${currentMonthTotals.totalSales}`);
-    console.log(`Total GP: ${currentMonthTotals.totalGP}`);
-    console.log(`Total Orders: ${currentMonthTotals.totalOrders}`);
-    console.log(`Average Margin: ${currentMonthTotals.averageMargin}`);
-  }
-  
-  return currentMonthTotals;
-};
-
-export const getEmptyDataStructure = () => {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const currentMonthIndex = getCurrentMonthIndex();
-  
-  // Only return months up to the current month
-  const availableMonths = months.slice(0, currentMonthIndex + 1);
-  
-  return {
-    currentMonth: {
-      totalSales: 0,
-      totalGP: 0,
-      totalOrders: 0,
-      averageMargin: 0
-    },
-    marginBands: [
-      { band: '<10%', orders: 0, value: 0, percentage: 0 },
-      { band: '10-20%', orders: 0, value: 0, percentage: 0 },
-      { band: '>20%', orders: 0, value: 0, percentage: 0 }
-    ],
-    monthlyTrend: [] // Empty array - no fake months with zero data
-  };
-};
+// Re-export for backward compatibility
+export { getEmptyDataStructure };
