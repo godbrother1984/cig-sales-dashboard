@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { KPISummary } from '../components/KPISummary';
 import { TargetActualChart } from '../components/TargetActualChart';
@@ -9,14 +10,16 @@ import { MonthYTDSelector } from '../components/MonthYTDSelector';
 import { ActionItemsCard } from '../components/ActionItemsCard';
 import { ApiConfigurationPanel } from '../components/ApiConfiguration';
 import { useSalesData } from '../hooks/useSalesData';
-import { Targets, DashboardFilters as DashboardFiltersType } from '../types';
+import { Targets, DashboardFilters as DashboardFiltersType, EnhancedTargets } from '../types';
+import { aggregateBusinessUnitTargets } from '../utils/targetCalculations';
 import { Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { getCurrentMonthIndex } from '../utils/monthAvailability';
 
 const Index = () => {
-  const [targets, setTargets] = useState<Targets>({
+  const [enhancedTargets, setEnhancedTargets] = useState<EnhancedTargets | null>(null);
+  const [legacyTargets, setLegacyTargets] = useState<Targets>({
     monthlySales: 3200000,
     monthlyGP: 800000,
     quarterlySales: 9600000,
@@ -34,18 +37,35 @@ const Index = () => {
     salesperson: 'all'
   });
 
-  const { salesData, isLoading } = useSalesData(filters, selectedMonth, viewMode, targets);
+  const { salesData, isLoading } = useSalesData(filters, selectedMonth, viewMode, legacyTargets);
 
   useEffect(() => {
-    const savedTargets = localStorage.getItem('salesTargets');
-    if (savedTargets) {
-      const parsedTargets = JSON.parse(savedTargets);
-      const updatedTargets = {
-        ...parsedTargets,
-        quarterlySales: parsedTargets.quarterlySales || parsedTargets.monthlySales * 3,
-        quarterlyGP: parsedTargets.quarterlyGP || parsedTargets.monthlyGP * 3
-      };
-      setTargets(updatedTargets);
+    // Load enhanced targets first
+    const savedEnhancedTargets = localStorage.getItem('enhancedSalesTargets');
+    if (savedEnhancedTargets) {
+      try {
+        const parsed = JSON.parse(savedEnhancedTargets);
+        console.log('Loaded enhanced targets:', parsed);
+        setEnhancedTargets(parsed);
+      } catch (error) {
+        console.error('Error parsing enhanced targets:', error);
+      }
+    }
+    
+    // Load legacy targets as fallback
+    const savedLegacyTargets = localStorage.getItem('salesTargets');
+    if (savedLegacyTargets) {
+      try {
+        const parsedLegacy = JSON.parse(savedLegacyTargets);
+        const updatedLegacyTargets = {
+          ...parsedLegacy,
+          quarterlySales: parsedLegacy.quarterlySales || parsedLegacy.monthlySales * 3,
+          quarterlyGP: parsedLegacy.quarterlyGP || parsedLegacy.monthlyGP * 3
+        };
+        setLegacyTargets(updatedLegacyTargets);
+      } catch (error) {
+        console.error('Error parsing legacy targets:', error);
+      }
     }
   }, []);
 
@@ -72,12 +92,28 @@ const Index = () => {
   }
 
   const getCurrentTargets = () => {
+    console.log('Getting current targets for business unit:', filters.businessUnit, 'viewMode:', viewMode);
+    
+    // Use enhanced targets if available
+    if (enhancedTargets) {
+      const aggregatedTargets = aggregateBusinessUnitTargets(
+        enhancedTargets,
+        filters.businessUnit,
+        selectedMonth,
+        viewMode
+      );
+      console.log('Using enhanced targets:', aggregatedTargets);
+      return aggregatedTargets;
+    }
+    
+    // Fallback to legacy targets
+    console.log('Using legacy targets as fallback');
     if (viewMode === 'monthly') {
-      return { sales: targets.monthlySales, gp: targets.monthlyGP };
+      return { sales: legacyTargets.monthlySales, gp: legacyTargets.monthlyGP };
     } else if (viewMode === 'qtd') {
-      return { sales: targets.quarterlySales, gp: targets.quarterlyGP };
+      return { sales: legacyTargets.quarterlySales, gp: legacyTargets.quarterlyGP };
     } else {
-      return { sales: targets.ytdSales, gp: targets.ytdGP };
+      return { sales: legacyTargets.ytdSales, gp: legacyTargets.ytdGP };
     }
   };
 

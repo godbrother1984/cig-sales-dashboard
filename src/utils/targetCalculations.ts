@@ -46,6 +46,103 @@ export const calculateMonthlyTargetsFromAnnual = (
   return calculateMonthlyTargetsFromAnnual(annualSales, annualGP, 'equal');
 };
 
+export const aggregateBusinessUnitTargets = (
+  enhancedTargets: EnhancedTargets,
+  businessUnit: string,
+  selectedMonth: number,
+  viewMode: string
+): { sales: number; gp: number } => {
+  console.log('Aggregating targets for business unit:', businessUnit, 'viewMode:', viewMode);
+  
+  if (businessUnit === 'all') {
+    // Aggregate all business unit targets
+    let totalSales = 0;
+    let totalGP = 0;
+    
+    Object.keys(enhancedTargets.businessUnitTargets).forEach(buKey => {
+      const buTargets = enhancedTargets.businessUnitTargets[buKey];
+      let buSales = 0;
+      let buGP = 0;
+      
+      // Get monthly targets for this business unit
+      let monthlyTargets = buTargets.monthlyTargets;
+      
+      // If using annual input method, calculate monthly from annual
+      if (buTargets.annualTargets && enhancedTargets.inputMethod === 'annual') {
+        monthlyTargets = calculateMonthlyTargetsFromAnnual(
+          buTargets.annualTargets.sales,
+          buTargets.annualTargets.gp,
+          buTargets.annualTargets.distribution,
+          buTargets.annualTargets.weights
+        );
+      }
+      
+      if (viewMode === 'monthly') {
+        buSales = monthlyTargets.sales[selectedMonth] || 0;
+        buGP = monthlyTargets.gp[selectedMonth] || 0;
+      } else if (viewMode === 'ytd') {
+        buSales = monthlyTargets.sales.slice(0, selectedMonth + 1).reduce((sum, target) => sum + target, 0);
+        buGP = monthlyTargets.gp.slice(0, selectedMonth + 1).reduce((sum, target) => sum + target, 0);
+      } else if (viewMode === 'qtd') {
+        const quarter = Math.floor(selectedMonth / 3);
+        const startMonth = quarter * 3;
+        const endMonth = Math.min(startMonth + 3, selectedMonth + 1);
+        buSales = monthlyTargets.sales.slice(startMonth, endMonth).reduce((sum, target) => sum + target, 0);
+        buGP = monthlyTargets.gp.slice(startMonth, endMonth).reduce((sum, target) => sum + target, 0);
+      }
+      
+      totalSales += buSales;
+      totalGP += buGP;
+      
+      console.log(`BU ${buKey}: Sales=${buSales}, GP=${buGP}`);
+    });
+    
+    console.log('Aggregated totals:', { sales: totalSales, gp: totalGP });
+    return { sales: totalSales, gp: totalGP };
+  } else {
+    // Get targets for specific business unit
+    const buTargets = enhancedTargets.businessUnitTargets[businessUnit];
+    if (!buTargets) {
+      console.warn(`No targets found for business unit: ${businessUnit}`);
+      return { sales: 0, gp: 0 };
+    }
+    
+    let monthlyTargets = buTargets.monthlyTargets;
+    
+    // If using annual input method, calculate monthly from annual
+    if (buTargets.annualTargets && enhancedTargets.inputMethod === 'annual') {
+      monthlyTargets = calculateMonthlyTargetsFromAnnual(
+        buTargets.annualTargets.sales,
+        buTargets.annualTargets.gp,
+        buTargets.annualTargets.distribution,
+        buTargets.annualTargets.weights
+      );
+    }
+    
+    if (viewMode === 'monthly') {
+      return {
+        sales: monthlyTargets.sales[selectedMonth] || 0,
+        gp: monthlyTargets.gp[selectedMonth] || 0
+      };
+    } else if (viewMode === 'ytd') {
+      return {
+        sales: monthlyTargets.sales.slice(0, selectedMonth + 1).reduce((sum, target) => sum + target, 0),
+        gp: monthlyTargets.gp.slice(0, selectedMonth + 1).reduce((sum, target) => sum + target, 0)
+      };
+    } else if (viewMode === 'qtd') {
+      const quarter = Math.floor(selectedMonth / 3);
+      const startMonth = quarter * 3;
+      const endMonth = Math.min(startMonth + 3, selectedMonth + 1);
+      return {
+        sales: monthlyTargets.sales.slice(startMonth, endMonth).reduce((sum, target) => sum + target, 0),
+        gp: monthlyTargets.gp.slice(startMonth, endMonth).reduce((sum, target) => sum + target, 0)
+      };
+    }
+    
+    return { sales: 0, gp: 0 };
+  }
+};
+
 export const calculateYTDTarget = (
   targets: EnhancedTargets,
   currentMonth: number
