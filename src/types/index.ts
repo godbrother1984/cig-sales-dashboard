@@ -1,3 +1,4 @@
+
 export interface ManualOrder {
   id: string;
   orderDate: string;
@@ -59,6 +60,7 @@ export interface EnhancedTargets {
   globalTargets: boolean; // true = single target, false = per-BU
   businessUnitTargets: BUTargets;
   selectedBusinessUnit: string;
+  migrationVersion?: number; // Add migration version tracking
   // Legacy fields for backward compatibility
   monthlyTargets: {
     sales: number[];
