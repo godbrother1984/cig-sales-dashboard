@@ -1,5 +1,6 @@
 
 import { ProcessedInvoiceItem, ProcessedSalesOrderItem } from './apiDataProcessor';
+import { isCurrentMonth } from './monthUtils';
 
 export const aggregateLatestMonthData = (
   filteredInvoiceData: ProcessedInvoiceItem[],
@@ -7,6 +8,8 @@ export const aggregateLatestMonthData = (
   latestMonth: string
 ) => {
   console.log(`=== AGGREGATING DATA FOR ${latestMonth.toUpperCase()} ===`);
+  const isCurrent = isCurrentMonth(latestMonth);
+  console.log(`Latest month ${latestMonth} is current: ${isCurrent}`);
   
   const latestInvoiceData = filteredInvoiceData
     .filter(item => {
@@ -38,29 +41,42 @@ export const aggregateLatestMonthData = (
       inv_margin_above_20: 0
     });
 
-  const latestSalesOrderData = filteredSalesOrderData
-    .filter(item => {
-      const matches = item && item.month && item.month.toLowerCase() === latestMonth;
-      if (matches) {
-        console.log(`Including sales order item for ${latestMonth}: BU=${item.businessUnit}, Amount=${item.total_so_amount}, Orders=${item.total_so}, GP=${item.gross_profit}`);
-      }
-      return matches;
-    })
-    .reduce((acc, item) => {
-      if (!item) return acc;
-      console.log(`Adding sales order values: Amount +${item.total_so_amount}, Orders +${item.total_so}, GP +${item.gross_profit}`);
-      return {
+  let latestSalesOrderData = {
+    month: latestMonth,
+    total_so: 0,
+    total_so_amount: 0,
+    gross_profit: 0
+  };
+
+  // Only include Sales Orders if this is the current month
+  if (isCurrent) {
+    console.log(`Including Sales Orders for current month: ${latestMonth}`);
+    latestSalesOrderData = filteredSalesOrderData
+      .filter(item => {
+        const matches = item && item.month && item.month.toLowerCase() === latestMonth;
+        if (matches) {
+          console.log(`Including sales order item for ${latestMonth}: BU=${item.businessUnit}, Amount=${item.total_so_amount}, Orders=${item.total_so}, GP=${item.gross_profit}`);
+        }
+        return matches;
+      })
+      .reduce((acc, item) => {
+        if (!item) return acc;
+        console.log(`Adding sales order values: Amount +${item.total_so_amount}, Orders +${item.total_so}, GP +${item.gross_profit}`);
+        return {
+          month: latestMonth,
+          total_so: acc.total_so + (Number(item.total_so) || 0),
+          total_so_amount: acc.total_so_amount + (Number(item.total_so_amount) || 0),
+          gross_profit: acc.gross_profit + (Number(item.gross_profit) || 0)
+        };
+      }, {
         month: latestMonth,
-        total_so: acc.total_so + (Number(item.total_so) || 0),
-        total_so_amount: acc.total_so_amount + (Number(item.total_so_amount) || 0),
-        gross_profit: acc.gross_profit + (Number(item.gross_profit) || 0)
-      };
-    }, {
-      month: latestMonth,
-      total_so: 0,
-      total_so_amount: 0,
-      gross_profit: 0
-    });
+        total_so: 0,
+        total_so_amount: 0,
+        gross_profit: 0
+      });
+  } else {
+    console.log(`Excluding Sales Orders for past month: ${latestMonth}`);
+  }
   
   return { latestInvoiceData, latestSalesOrderData };
 };

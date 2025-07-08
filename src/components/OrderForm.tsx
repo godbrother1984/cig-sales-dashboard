@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -14,7 +13,7 @@ interface OrderFormProps {
   onAddOrder: () => void;
 }
 
-const salespeople = ['John Smith', 'Sarah Johnson', 'Mike Chen', 'Lisa Wong'];
+const salespeople = ['Terameth', 'Suwipa', 'Chian', 'Anuchai', 'Sanan', 'Sirinat', 'Rattiya', 'Tananchai'];
 
 export const OrderForm: React.FC<OrderFormProps> = ({
   currentOrder,

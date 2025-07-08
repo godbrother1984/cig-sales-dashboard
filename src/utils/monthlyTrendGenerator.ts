@@ -1,6 +1,7 @@
 
 import { MonthlyData } from '../types';
 import { ProcessedInvoiceItem, ProcessedSalesOrderItem } from './apiDataProcessor';
+import { isCurrentMonth, isPastMonth } from './monthUtils';
 
 const MONTH_ORDER = {
   'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
@@ -67,6 +68,10 @@ export const generateMonthlyTrend = (
   
   return availableMonths.map(monthKey => {
     console.log(`Processing monthly trend for ${monthKey}:`);
+    const isCurrent = isCurrentMonth(monthKey);
+    const isPast = isPastMonth(monthKey);
+    
+    console.log(`  ${monthKey} - Current: ${isCurrent}, Past: ${isPast}`);
     
     const invoiceMonthData = invoiceData
       .filter(item => item && item.month && item.month.toLowerCase() === monthKey)
@@ -80,17 +85,25 @@ export const generateMonthlyTrend = (
         };
       }, { total_inv_amount: 0, gross_profit: 0, total_inv: 0 });
 
-    const salesOrderMonthData = salesOrderData
-      .filter(item => item && item.month && item.month.toLowerCase() === monthKey)
-      .reduce((acc, item) => {
-        if (!item) return acc;
-        console.log(`  Sales Order: BU=${item.businessUnit}, Amount=${item.total_so_amount}, GP=${item.gross_profit}, Orders=${item.total_so}`);
-        return {
-          total_so_amount: acc.total_so_amount + (Number(item.total_so_amount) || 0),
-          gross_profit: acc.gross_profit + (Number(item.gross_profit) || 0),
-          total_so: acc.total_so + (Number(item.total_so) || 0)
-        };
-      }, { total_so_amount: 0, gross_profit: 0, total_so: 0 });
+    let salesOrderMonthData = { total_so_amount: 0, gross_profit: 0, total_so: 0 };
+    
+    // Only include Sales Orders for current month, exclude for past months
+    if (isCurrent) {
+      console.log(`  Including Sales Orders for current month: ${monthKey}`);
+      salesOrderMonthData = salesOrderData
+        .filter(item => item && item.month && item.month.toLowerCase() === monthKey)
+        .reduce((acc, item) => {
+          if (!item) return acc;
+          console.log(`  Sales Order: BU=${item.businessUnit}, Amount=${item.total_so_amount}, GP=${item.gross_profit}, Orders=${item.total_so}`);
+          return {
+            total_so_amount: acc.total_so_amount + (Number(item.total_so_amount) || 0),
+            gross_profit: acc.gross_profit + (Number(item.gross_profit) || 0),
+            total_so: acc.total_so + (Number(item.total_so) || 0)
+          };
+        }, { total_so_amount: 0, gross_profit: 0, total_so: 0 });
+    } else {
+      console.log(`  Excluding Sales Orders for past month: ${monthKey}`);
+    }
     
     const totalSales = (Number(invoiceMonthData.total_inv_amount) || 0) + (Number(salesOrderMonthData.total_so_amount) || 0);
     const totalGP = (Number(invoiceMonthData.gross_profit) || 0) + (Number(salesOrderMonthData.gross_profit) || 0);
@@ -104,20 +117,45 @@ export const generateMonthlyTrend = (
       gp: totalGP,
       totalOrders: totalOrders,
       salespeople: {
-        'John Smith': { 
-          sales: totalSales * 0.3, 
-          gp: totalGP * 0.3, 
-          orders: Math.floor(totalOrders * 0.3) 
+        'Terameth': { 
+          sales: totalSales * 0.15, 
+          gp: totalGP * 0.15, 
+          orders: Math.floor(totalOrders * 0.15) 
         },
-        'Sarah Johnson': { 
-          sales: totalSales * 0.4, 
-          gp: totalGP * 0.4, 
-          orders: Math.floor(totalOrders * 0.4) 
+        'Suwipa': { 
+          sales: totalSales * 0.15, 
+          gp: totalGP * 0.15, 
+          orders: Math.floor(totalOrders * 0.15) 
         },
-        'Mike Chen': { 
-          sales: totalSales * 0.3, 
-          gp: totalGP * 0.3, 
-          orders: Math.floor(totalOrders * 0.3) 
+        'Chian': { 
+          sales: totalSales * 0.12, 
+          gp: totalGP * 0.12, 
+          orders: Math.floor(totalOrders * 0.12) 
+        },
+        'Anuchai': { 
+          sales: totalSales * 0.12, 
+          gp: totalGP * 0.12, 
+          orders: Math.floor(totalOrders * 0.12) 
+        },
+        'Sanan': { 
+          sales: totalSales * 0.12, 
+          gp: totalGP * 0.12, 
+          orders: Math.floor(totalOrders * 0.12) 
+        },
+        'Sirinat': { 
+          sales: totalSales * 0.12, 
+          gp: totalGP * 0.12, 
+          orders: Math.floor(totalOrders * 0.12) 
+        },
+        'Rattiya': { 
+          sales: totalSales * 0.12, 
+          gp: totalGP * 0.12, 
+          orders: Math.floor(totalOrders * 0.12) 
+        },
+        'Tananchai': { 
+          sales: totalSales * 0.10, 
+          gp: totalGP * 0.10, 
+          orders: Math.floor(totalOrders * 0.10) 
         }
       },
       customers: {
