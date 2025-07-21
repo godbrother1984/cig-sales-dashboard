@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -11,6 +12,7 @@ interface OrderFormProps {
   currentOrder: Partial<ManualOrder>;
   onInputChange: (field: keyof ManualOrder, value: string | number) => void;
   onAddOrder: () => void;
+  isLoading?: boolean;
 }
 
 const salespeople = ['Terameth', 'Suwipa', 'Chian', 'Anuchai', 'Sanan', 'Sirinat', 'Rattiya', 'Tananchai'];
@@ -18,7 +20,8 @@ const salespeople = ['Terameth', 'Suwipa', 'Chian', 'Anuchai', 'Sanan', 'Sirinat
 export const OrderForm: React.FC<OrderFormProps> = ({
   currentOrder,
   onInputChange,
-  onAddOrder
+  onAddOrder,
+  isLoading = false
 }) => {
   return (
     <Card>
@@ -119,9 +122,9 @@ export const OrderForm: React.FC<OrderFormProps> = ({
         </div>
         
         <div className="flex justify-end">
-          <Button onClick={onAddOrder} className="gap-2">
+          <Button onClick={onAddOrder} className="gap-2" disabled={isLoading}>
             <Plus className="h-4 w-4" />
-            Add Order
+            {isLoading ? 'Adding...' : 'Add Order'}
           </Button>
         </div>
       </CardContent>
