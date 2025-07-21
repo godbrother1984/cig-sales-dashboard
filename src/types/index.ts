@@ -55,6 +55,7 @@ export interface BUTargets {
 }
 
 export interface EnhancedTargets {
+  id?: string; // API ID
   inputMethod: 'monthly' | 'annual';
   rolloverStrategy: 'none' | 'cumulative' | 'quarterly' | 'redistribute';
   globalTargets: boolean; // true = single target, false = per-BU
@@ -100,4 +101,16 @@ export interface DashboardFilters {
   businessUnit: string;
   customerName: string;
   salesperson: string;
+}
+
+// User-related types
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'editor' | 'tester';
+  organization_id?: string;
+  last_login?: string;
+  created_at: string;
+  updated_at: string;
 }

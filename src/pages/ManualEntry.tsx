@@ -8,7 +8,7 @@ import { OrdersTable } from '../components/OrdersTable';
 import { useManualOrders } from '../hooks/useManualOrders';
 
 const ManualEntry = () => {
-  const { orders, currentOrder, handleInputChange, addOrder, removeOrder } = useManualOrders();
+  const { orders, currentOrder, isLoading, handleInputChange, addOrder, removeOrder } = useManualOrders();
 
   return (
     <div className="min-h-screen bg-background">
@@ -34,9 +34,14 @@ const ManualEntry = () => {
           currentOrder={currentOrder}
           onInputChange={handleInputChange}
           onAddOrder={addOrder}
+          isLoading={isLoading}
         />
         
-        <OrdersTable orders={orders} onRemoveOrder={removeOrder} />
+        <OrdersTable 
+          orders={orders} 
+          onRemoveOrder={removeOrder}
+          isLoading={isLoading}
+        />
       </div>
     </div>
   );

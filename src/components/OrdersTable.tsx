@@ -2,22 +2,35 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Loader2 } from 'lucide-react';
 import { ManualOrder } from '../types';
 
 interface OrdersTableProps {
   orders: ManualOrder[];
   onRemoveOrder: (id: string) => void;
+  isLoading?: boolean;
 }
 
-export const OrdersTable: React.FC<OrdersTableProps> = ({ orders, onRemoveOrder }) => {
+export const OrdersTable: React.FC<OrdersTableProps> = ({ 
+  orders, 
+  onRemoveOrder, 
+  isLoading = false 
+}) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Manual Orders ({orders.length})</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          Manual Orders ({orders.length})
+          {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        {orders.length === 0 ? (
+        {isLoading && orders.length === 0 ? (
+          <div className="text-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+            <p className="text-muted-foreground">Loading orders...</p>
+          </div>
+        ) : orders.length === 0 ? (
           <p className="text-muted-foreground text-center py-8">No manual orders added yet</p>
         ) : (
           <div className="overflow-x-auto">
@@ -49,6 +62,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({ orders, onRemoveOrder 
                         variant="ghost" 
                         size="sm" 
                         onClick={() => onRemoveOrder(order.id)}
+                        disabled={isLoading}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
