@@ -1,12 +1,14 @@
 
 import { useState, useEffect, createContext, useContext } from 'react';
-import { UserApiService, User, LoginCredentials } from '../services/userApiService';
+import { UserApiService, User } from '../services/userApiService';
 import { useToast } from './use-toast';
 
 interface AuthContextType {
   user: User | null;
+  users: User[];
   isLoading: boolean;
-  login: (credentials: LoginCredentials) => Promise<boolean>;
+  loadUsers: () => Promise<void>;
+  selectUser: (user: User) => void;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -23,20 +25,19 @@ export const useAuth = () => {
 
 export const useAuthProvider = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const userApi = new UserApiService();
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
     const savedUser = localStorage.getItem('current_user');
     
-    if (token && savedUser) {
+    if (savedUser) {
       try {
         setUser(JSON.parse(savedUser));
       } catch (error) {
         console.error('Failed to parse saved user:', error);
-        localStorage.removeItem('auth_token');
         localStorage.removeItem('current_user');
       }
     }
@@ -44,42 +45,39 @@ export const useAuthProvider = () => {
     setIsLoading(false);
   }, []);
 
-  const login = async (credentials: LoginCredentials): Promise<boolean> => {
+  const loadUsers = async (): Promise<void> => {
     try {
       setIsLoading(true);
-      const response = await userApi.login(credentials);
+      const response = await userApi.getAllUsers();
       
-      if (response.result && response.data) {
-        const { token, ...userData } = response.data;
-        if (token) {
-          localStorage.setItem('auth_token', token);
-        }
-        localStorage.setItem('current_user', JSON.stringify(userData));
-        setUser(userData);
-        
-        toast({
-          title: "Login Successful",
-          description: `Welcome back, ${userData.name}!`,
-        });
-        
-        return true;
+      if (response.result && response.datas) {
+        setUsers(response.datas);
       } else {
-        throw new Error(response.errors?.[0]?.message || 'Login failed');
+        throw new Error('Failed to load users');
       }
     } catch (error) {
+      console.error('Error loading users:', error);
       toast({
-        title: "Login Failed",
-        description: error instanceof Error ? error.message : 'Unknown error occurred',
+        title: "Error Loading Users",
+        description: "Failed to fetch user list from server.",
         variant: "destructive",
       });
-      return false;
     } finally {
       setIsLoading(false);
     }
   };
 
+  const selectUser = (selectedUser: User) => {
+    localStorage.setItem('current_user', JSON.stringify(selectedUser));
+    setUser(selectedUser);
+    
+    toast({
+      title: "User Selected",
+      description: `Logged in as ${selectedUser.name} (${selectedUser.role})`,
+    });
+  };
+
   const logout = () => {
-    localStorage.removeItem('auth_token');
     localStorage.removeItem('current_user');
     setUser(null);
     
@@ -91,8 +89,10 @@ export const useAuthProvider = () => {
 
   return {
     user,
+    users,
     isLoading,
-    login,
+    loadUsers,
+    selectUser,
     logout,
     isAuthenticated: !!user
   };

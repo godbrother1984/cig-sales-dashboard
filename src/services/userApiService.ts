@@ -1,4 +1,3 @@
-
 import { BaseApiService, ApiResponse } from './baseApiService';
 
 export interface User {
@@ -26,6 +25,7 @@ export interface CreateUserData {
 }
 
 export class UserApiService extends BaseApiService {
+  // Keep the login method for future use when authentication is implemented
   async login(credentials: LoginCredentials): Promise<ApiResponse<User & { token?: string }>> {
     return this.request('/SalesdashboardUser/auth/login', {
       method: 'POST',
