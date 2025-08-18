@@ -81,9 +81,14 @@ export const MonthYTDSelector: React.FC<MonthYTDSelectorProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     {months.map((month, index) => (
-                      availableMonthIndices.includes(index) && (
-                        <SelectItem key={index} value={index.toString()}>{month}</SelectItem>
-                      )
+                      <SelectItem 
+                        key={index} 
+                        value={index.toString()}
+                        className={!availableMonthIndices.includes(index) ? 'text-muted-foreground' : ''}
+                      >
+                        {month}
+                        {!availableMonthIndices.includes(index) && ' (No Data)'}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -95,9 +100,14 @@ export const MonthYTDSelector: React.FC<MonthYTDSelectorProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     {months.map((month, index) => (
-                      availableMonthIndices.includes(index) && (
-                        <SelectItem key={index} value={index.toString()}>{month}</SelectItem>
-                      )
+                      <SelectItem 
+                        key={index} 
+                        value={index.toString()}
+                        className={!availableMonthIndices.includes(index) ? 'text-muted-foreground' : ''}
+                      >
+                        {month}
+                        {!availableMonthIndices.includes(index) && ' (No Data)'}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
