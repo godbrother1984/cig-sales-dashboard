@@ -1,0 +1,339 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-09T10:00:00Z",
+  
+  "apiConfiguration": {
+    "profiles": {
+      "cigDynamics": {
+        "name": "CIG Dynamics API",
+        "description": "Default mapping for CIG MS Dynamics",
+        "baseUrl": "https://cflowdev.cigblusolutions.com/api/service/cigSalesDashboard",
+        "timeout": 10000,
+        "retryAttempts": 3,
+        "healthCheckInterval": 300000,
+        "fieldMappings": {
+          "salesData": {
+            "totalSales": "datas.invoice[].total_inv_amount",
+            "totalGP": "datas.invoice[].gross_profit",
+            "totalOrders": "datas.invoice[].total_inv",
+            "averageMargin": "datas.invoice[].margin",
+            "month": "datas.invoice[].month",
+            "businessUnit": "datas.invoice[].bu",
+            "dataArea": "datas.invoice[].dataArea"
+          },
+          "marginBands": {
+            "below10": "datas.invoice[].inv_margin_below_10",
+            "between10_20": "datas.invoice[].inv_margin_10_to_20", 
+            "above20": "datas.invoice[].inv_margin_above_20"
+          }
+        }
+      },
+      "customAPI": {
+        "name": "Custom API",
+        "description": "User-defined custom API mapping",
+        "baseUrl": "",
+        "timeout": 10000,
+        "retryAttempts": 3,
+        "healthCheckInterval": 300000,
+        "fieldMappings": {
+          "salesData": {
+            "totalSales": "sales.total",
+            "totalGP": "profit.gross",
+            "totalOrders": "orders.count",
+            "averageMargin": "profit.margin_avg"
+          }
+        }
+      }
+    },
+    "activeProfile": "cigDynamics"
+  },
+  
+  "dashboardConfiguration": {
+    "defaultView": "monthly",
+    "defaultBusinessUnit": "all",
+    "refreshInterval": 300000,
+    "kpiCards": [
+      {
+        "id": "totalSales",
+        "title": "Total Sales (THB)",
+        "enabled": true,
+        "format": "currency",
+        "icon": "CircleDollarSign",
+        "borderColor": "primary",
+        "order": 1
+      },
+      {
+        "id": "totalGP", 
+        "title": "Gross Profit (THB)",
+        "enabled": true,
+        "format": "currency",
+        "icon": "TrendingUp",
+        "borderColor": "secondary",
+        "order": 2
+      },
+      {
+        "id": "totalOrders",
+        "title": "Total Orders",
+        "enabled": true,
+        "format": "number",
+        "icon": "BarChart",
+        "borderColor": "accent",
+        "order": 3
+      },
+      {
+        "id": "gapAnalysis",
+        "title": "Gap to Target",
+        "enabled": true,
+        "format": "currency",
+        "icon": "TrendingDown",
+        "borderColor": "destructive",
+        "order": 4
+      }
+    ],
+    "charts": {
+      "targetActual": {
+        "enabled": true,
+        "height": 300,
+        "colors": {
+          "actual": "hsl(var(--primary))",
+          "target": "hsl(var(--secondary))"
+        }
+      },
+      "marginBands": {
+        "enabled": true,
+        "height": 300,
+        "bands": [
+          {"min": 0, "max": 10, "label": "0-10%", "color": "#ef4444"},
+          {"min": 10, "max": 20, "label": "10-20%", "color": "#f97316"},
+          {"min": 20, "max": 100, "label": "20%+", "color": "#22c55e"}
+        ]
+      },
+      "trendChart": {
+        "enabled": true,
+        "height": 400,
+        "showGridLines": true,
+        "colors": {
+          "sales": "hsl(var(--primary))",
+          "gp": "hsl(var(--secondary))"
+        }
+      }
+    }
+  },
+  
+  "userInterface": {
+    "theme": {
+      "defaultMode": "light",
+      "allowToggle": true,
+      "primaryColor": "207 90% 45%",
+      "secondaryColor": "207 30% 85%",
+      "accentColor": "0 75% 55%"
+    },
+    "language": {
+      "default": "th",
+      "supported": ["th", "en"]
+    },
+    "dateFormat": {
+      "display": "DD/MM/YYYY",
+      "api": "YYYY-MM-DD"
+    },
+    "numberFormat": {
+      "currency": "THB",
+      "locale": "th-TH",
+      "decimals": 0,
+      "thousandSeparator": ","
+    },
+    "navigation": {
+      "showBreadcrumbs": false,
+      "enableBackButton": true,
+      "sidebarCollapsible": false
+    }
+  },
+  
+  "businessConfiguration": {
+    "businessUnits": [
+      {"id": "all", "label": "All Units", "enabled": true, "color": "#64748b"},
+      {"id": "coil", "label": "Coil", "enabled": true, "color": "#3b82f6"},
+      {"id": "unit", "label": "Unit", "enabled": true, "color": "#10b981"},
+      {"id": "me", "label": "M&E", "enabled": true, "color": "#f59e0b"},
+      {"id": "hbpm", "label": "HBPM", "enabled": true, "color": "#8b5cf6"},
+      {"id": "mkt", "label": "MKT", "enabled": true, "color": "#ef4444"}
+    ],
+    "targetSettings": {
+      "defaultInputMethod": "monthly",
+      "defaultRolloverStrategy": "none",
+      "allowBusinessUnitTargets": true,
+      "fiscalYearStart": "01-01"
+    },
+    "validationRules": {
+      "orderValue": {"min": 1, "max": 999999999},
+      "grossMargin": {"min": 0, "max": 100},
+      "customerName": {"minLength": 2, "maxLength": 100},
+      "salesperson": {"minLength": 2, "maxLength": 50}
+    }
+  },
+  
+  "userInputConfiguration": {
+    "manualOrderForm": {
+      "fields": [
+        {
+          "id": "orderDate",
+          "type": "date",
+          "label": "Order Date",
+          "required": true,
+          "defaultValue": "today",
+          "validation": {"max": "today"},
+          "helpText": "วันที่สั่งซื้อ (ไม่เกินวันปัจจุบัน)"
+        },
+        {
+          "id": "customerName", 
+          "type": "text",
+          "label": "Customer Name",
+          "required": true,
+          "placeholder": "กรอกชื่อลูกค้า",
+          "autocomplete": true,
+          "validation": {"minLength": 2, "maxLength": 100}
+        },
+        {
+          "id": "businessUnit",
+          "type": "select",
+          "label": "Business Unit", 
+          "required": true,
+          "options": "businessConfiguration.businessUnits",
+          "defaultValue": "hbpm",
+          "excludeOptions": ["all"]
+        },
+        {
+          "id": "orderValue",
+          "type": "number",
+          "label": "Order Value (THB)",
+          "required": true,
+          "format": "currency",
+          "validation": {"min": 1, "max": 999999999},
+          "step": 1000
+        },
+        {
+          "id": "grossMargin",
+          "type": "number", 
+          "label": "Gross Margin (%)",
+          "required": true,
+          "suffix": "%",
+          "validation": {"min": 0, "max": 100},
+          "step": 0.1,
+          "autoCalculate": {
+            "from": ["orderValue", "grossProfit"],
+            "formula": "(grossProfit / orderValue) * 100",
+            "condition": "orderValue > 0"
+          }
+        },
+        {
+          "id": "grossProfit",
+          "type": "number",
+          "label": "Gross Profit (THB)",
+          "format": "currency",
+          "step": 1000,
+          "autoCalculate": {
+            "from": ["orderValue", "grossMargin"], 
+            "formula": "orderValue * (grossMargin / 100)",
+            "condition": "orderValue > 0 && grossMargin >= 0"
+          }
+        },
+        {
+          "id": "salesperson",
+          "type": "text",
+          "label": "Salesperson",
+          "required": true,
+          "autocomplete": true,
+          "validation": {"minLength": 2, "maxLength": 50},
+          "suggestions": ["John Doe", "Jane Smith", "Bob Wilson", "Alice Johnson"]
+        }
+      ],
+      "layout": {
+        "columns": 2,
+        "sections": [
+          {
+            "title": "Order Information",
+            "fields": ["orderDate", "customerName", "businessUnit"]
+          },
+          {
+            "title": "Financial Details", 
+            "fields": ["orderValue", "grossMargin", "grossProfit", "salesperson"]
+          }
+        ]
+      }
+    },
+    
+    "targetForm": {
+      "fields": [
+        {
+          "id": "inputMethod",
+          "type": "radio",
+          "label": "Target Input Method",
+          "required": true,
+          "options": [
+            {"value": "monthly", "label": "Monthly Targets", "description": "กำหนดเป้าหมายแยกรายเดือน"},
+            {"value": "annual", "label": "Annual Target", "description": "กำหนดเป้าหมายรายปี แล้วกระจายเป็นรายเดือน"}
+          ],
+          "defaultValue": "monthly"
+        },
+        {
+          "id": "rolloverStrategy",
+          "type": "select", 
+          "label": "Rollover Strategy",
+          "required": true,
+          "options": [
+            {"value": "none", "label": "No Rollover", "description": "ไม่มีการดำเนินการพิเศษ"},
+            {"value": "cumulative", "label": "Cumulative", "description": "รวมเป้าหมายที่ขาดไปในเดือนถัดไป"},
+            {"value": "quarterly", "label": "Quarterly", "description": "กระจายเป้าหมายที่ขาดในไตรมาส"},
+            {"value": "redistribute", "label": "Redistribute", "description": "กระจายเป้าหมายที่ขาดในเดือนที่เหลือ"}
+          ],
+          "defaultValue": "none",
+          "helpText": "วิธีการจัดการเมื่อเป้าหมายไม่บรรลุ"
+        },
+        {
+          "id": "globalTargets",
+          "type": "checkbox",
+          "label": "Use Global Targets",
+          "defaultValue": true,
+          "helpText": "ใช้เป้าหมายรวมทั้งหมด หรือแยกตาม Business Unit"
+        }
+      ],
+      "layout": {
+        "columns": 1,
+        "sections": [
+          {
+            "title": "Target Configuration",
+            "fields": ["inputMethod", "rolloverStrategy", "globalTargets"]
+          }
+        ]
+      }
+    }
+  },
+  
+  "systemConfiguration": {
+    "performance": {
+      "cacheTimeout": 300000,
+      "maxRetries": 3,
+      "requestTimeout": 10000,
+      "enableOfflineCache": true
+    },
+    "logging": {
+      "level": "info",
+      "enableConsole": true,
+      "enableAnalytics": false,
+      "logApiCalls": true
+    },
+    "features": {
+      "realTimeUpdates": false,
+      "offlineMode": true,
+      "exportData": true,
+      "importData": true,
+      "autoSave": true,
+      "notifications": true
+    },
+    "security": {
+      "sessionTimeout": 3600000,
+      "requireReauth": false,
+      "encryptLocalStorage": false
+    }
+  }
+}
