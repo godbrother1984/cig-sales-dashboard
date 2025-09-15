@@ -34,6 +34,17 @@ export interface ApiConfig {
   timeout?: number;
 }
 
+export interface SalesDataParams {
+  year?: number;
+  month?: number;
+  company?: string;
+  businessUnit?: string;
+  dateRange?: {
+    startDate: string;
+    endDate: string;
+  };
+}
+
 export class DynamicsApiService {
   private config: ApiConfig;
 
@@ -44,10 +55,40 @@ export class DynamicsApiService {
     };
   }
 
-  async fetchSalesData(year: number = new Date().getFullYear()): Promise<DynamicsApiResponse> {
+  async fetchSalesData(params: SalesDataParams = {}): Promise<DynamicsApiResponse> {
     try {
-      const url = `${this.config.baseUrl}?year=${year}`;
-      
+      // Set default values
+      const {
+        year = new Date().getFullYear(),
+        month,
+        company,
+        businessUnit,
+        dateRange
+      } = params;
+
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      queryParams.append('year', year.toString());
+
+      if (month !== undefined) {
+        queryParams.append('month', month.toString());
+      }
+
+      if (company) {
+        queryParams.append('company', company);
+      }
+
+      if (businessUnit) {
+        queryParams.append('businessUnit', businessUnit);
+      }
+
+      if (dateRange) {
+        queryParams.append('startDate', dateRange.startDate);
+        queryParams.append('endDate', dateRange.endDate);
+      }
+
+      const url = `${this.config.baseUrl}?${queryParams.toString()}`;
+
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
@@ -58,6 +99,7 @@ export class DynamicsApiService {
       }
 
       console.log('Fetching sales data from:', url);
+      console.log('Request parameters:', params);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);

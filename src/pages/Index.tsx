@@ -8,14 +8,18 @@ import { TrendChart } from '../components/TrendChart';
 import { DashboardHeader } from '../components/DashboardHeader';
 import { MonthYTDSelector } from '../components/MonthYTDSelector';
 import { ActionItemsCard } from '../components/ActionItemsCard';
-import { ApiConfigurationPanel } from '../components/ApiConfiguration';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Calendar, Filter } from 'lucide-react';
 import { useSalesData } from '../hooks/useSalesData';
 import { Targets, DashboardFilters as DashboardFiltersType, EnhancedTargets } from '../types';
 import { aggregateBusinessUnitTargets } from '../utils/targetCalculations';
-import { Settings } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { getCurrentMonthIndex } from '../utils/monthAvailability';
+import {
+  extractAvailableCustomers,
+  extractAvailableSalespeople,
+  extractManualOrderCustomers,
+  extractManualOrderSalespeople
+} from '../utils/dataUtils';
 
 const Index = () => {
   const [enhancedTargets, setEnhancedTargets] = useState<EnhancedTargets | null>(null);
@@ -36,8 +40,9 @@ const Index = () => {
     customerName: 'all',
     salesperson: 'all'
   });
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const { salesData, isLoading } = useSalesData(filters, selectedMonth, viewMode, legacyTargets);
+  const { salesData, isLoading } = useSalesData(filters, selectedMonth, viewMode, legacyTargets, refreshTrigger);
 
   useEffect(() => {
     // Load enhanced targets first
@@ -122,68 +127,188 @@ const Index = () => {
   const gapToGPTarget = currentTargets.gp - salesData.currentMonth.totalGP;
   const requiredAverageMargin = gapToSalesTarget > 0 ? (gapToGPTarget / gapToSalesTarget) * 100 : 0;
 
+  // Get manual orders from localStorage to extract additional filter options
+  const getManualOrders = () => {
+    try {
+      const savedOrders = localStorage.getItem('manualOrders');
+      return savedOrders ? JSON.parse(savedOrders) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  // Extract dynamic filter options from actual data
+  const manualOrders = getManualOrders();
+  const apiCustomers = salesData ? extractAvailableCustomers(salesData) : [];
+  const apiSalespeople = salesData ? extractAvailableSalespeople(salesData) : [];
+  const manualCustomers = extractManualOrderCustomers(manualOrders);
+  const manualSalespeople = extractManualOrderSalespeople(manualOrders);
+
+  // Combine and deduplicate options from both API and manual data
+  const availableCustomers = Array.from(new Set([...apiCustomers, ...manualCustomers])).sort();
+  const availableSalespeople = Array.from(new Set([...apiSalespeople, ...manualSalespeople])).sort();
+
+  // Add "All" option if there are any options available
+  const customers = availableCustomers.length > 0 ? ['All', ...availableCustomers] : ['All'];
+  const salespeople = availableSalespeople.length > 0 ? ['All', ...availableSalespeople] : ['All'];
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader />
 
       <div className="container mx-auto px-6 py-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <MonthYTDSelector
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-6 flex-wrap">
+              {/* Period Section */}
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium">Period:</span>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-muted-foreground">View:</label>
+                  <select
+                    className="px-3 py-2 border border-input bg-background rounded-md text-sm w-24"
+                    value={viewMode}
+                    onChange={(e) => setViewMode(e.target.value)}
+                  >
+                    <option value="monthly">Monthly</option>
+                    <option value="qtd">QTD</option>
+                    <option value="ytd">YTD</option>
+                  </select>
+                </div>
+                {(viewMode === 'monthly' || viewMode === 'qtd') && (
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-muted-foreground">
+                      {viewMode === 'monthly' ? 'Month:' : 'Quarter End:'}
+                    </label>
+                    <select
+                      className="px-3 py-2 border border-input bg-background rounded-md text-sm w-28"
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                    >
+                      {['January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'
+                      ].map((month, index) => (
+                        <option key={index} value={index}>
+                          {month}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-muted-foreground">Year:</label>
+                  <select
+                    className="px-3 py-2 border border-input bg-background rounded-md text-sm w-20"
+                    onChange={(e) => {
+                      localStorage.setItem('selected_year', e.target.value);
+                      setRefreshTrigger(prev => prev + 1);
+                    }}
+                    defaultValue={new Date().getFullYear().toString()}
+                  >
+                    {Array.from({ length: 11 }, (_, i) => {
+                      const year = new Date().getFullYear() - 5 + i;
+                      return (
+                        <option key={year} value={year}>
+                          {year + 543}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              </div>
+
+              {/* Separator */}
+              <div className="h-6 w-px bg-border"></div>
+
+              {/* Filters Section */}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Filters:</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-muted-foreground">Business Unit:</label>
+                  <select
+                    className="px-3 py-2 border border-input bg-background rounded-md text-sm w-20"
+                    value={filters.businessUnit === 'all' ? 'All' : filters.businessUnit}
+                    onChange={(e) => setFilters(prev => ({ ...prev, businessUnit: e.target.value.toLowerCase() === 'all' ? 'all' : e.target.value }))}
+                  >
+                    {['All', 'Coil', 'Unit', 'M&E', 'HBPM', 'MKT'].map(unit => (
+                      <option key={unit} value={unit}>{unit}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-muted-foreground">Customer:</label>
+                  <select
+                    className="px-3 py-2 border border-input bg-background rounded-md text-sm w-40"
+                    value={filters.customerName === 'all' ? 'All' : filters.customerName}
+                    onChange={(e) => setFilters(prev => ({ ...prev, customerName: e.target.value.toLowerCase() === 'all' ? 'all' : e.target.value }))}
+                  >
+                    {customers.map(customer => (
+                      <option key={customer} value={customer}>{customer}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm text-muted-foreground">Salesperson:</label>
+                  <select
+                    className="px-3 py-2 border border-input bg-background rounded-md text-sm w-32"
+                    value={filters.salesperson === 'all' ? 'All' : filters.salesperson}
+                    onChange={(e) => setFilters(prev => ({ ...prev, salesperson: e.target.value.toLowerCase() === 'all' ? 'all' : e.target.value }))}
+                  >
+                    {salespeople.map(person => (
+                      <option key={person} value={person}>{person}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* KPI Summary Cards */}
+        <div className="space-y-2">
+          <h2 className="text-lg font-semibold text-muted-foreground">KPI Summary Cards</h2>
+          <KPISummary
+            data={salesData.currentMonth}
+            targets={currentTargets}
+            gapToSalesTarget={gapToSalesTarget}
+            gapToGPTarget={gapToGPTarget}
+            requiredAverageMargin={requiredAverageMargin}
+          />
+        </div>
+
+        {/* Charts Section */}
+        <div className="space-y-2">
+          <h2 className="text-lg font-semibold text-muted-foreground">Charts</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TargetActualChart
+              salesActual={salesData.currentMonth.totalSales}
+              salesTarget={currentTargets.sales}
+              gpActual={salesData.currentMonth.totalGP}
+              gpTarget={currentTargets.gp}
+            />
+            <MarginBandChart data={salesData.marginBands} />
+          </div>
+        </div>
+
+        {/* Trend Analysis */}
+        <div className="space-y-2">
+          <h2 className="text-lg font-semibold text-muted-foreground">Monthly Trend Analysis</h2>
+          <TrendChart data={salesData.monthlyTrend} />
+        </div>
+
+        {/* Action Items */}
+        <div className="space-y-2">
+          <h2 className="text-lg font-semibold text-muted-foreground">Action Items</h2>
+          <ActionItemsCard
+            gapToSalesTarget={gapToSalesTarget}
+            gapToGPTarget={gapToGPTarget}
+            requiredAverageMargin={requiredAverageMargin}
             viewMode={viewMode}
-            selectedMonth={selectedMonth}
-            onViewModeChange={setViewMode}
-            onMonthChange={setSelectedMonth}
-            salesData={salesData}
           />
-          
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                API Settings
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>API Configuration</DialogTitle>
-              </DialogHeader>
-              <ApiConfigurationPanel />
-            </DialogContent>
-          </Dialog>
         </div>
-
-        <DashboardFilters 
-          filters={filters} 
-          onFilterChange={setFilters}
-          salesData={salesData}
-        />
-
-        <KPISummary 
-          data={salesData.currentMonth}
-          targets={currentTargets}
-          gapToSalesTarget={gapToSalesTarget}
-          gapToGPTarget={gapToGPTarget}
-          requiredAverageMargin={requiredAverageMargin}
-        />
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <TargetActualChart 
-            salesActual={salesData.currentMonth.totalSales}
-            salesTarget={currentTargets.sales}
-            gpActual={salesData.currentMonth.totalGP}
-            gpTarget={currentTargets.gp}
-          />
-          <MarginBandChart data={salesData.marginBands} />
-        </div>
-
-        <TrendChart data={salesData.monthlyTrend} />
-
-        <ActionItemsCard
-          gapToSalesTarget={gapToSalesTarget}
-          gapToGPTarget={gapToGPTarget}
-          requiredAverageMargin={requiredAverageMargin}
-          viewMode={viewMode}
-        />
       </div>
     </div>
   );

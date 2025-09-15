@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from './use-toast';
-import { useAuth } from './useAuth';
+import { useAuth } from '../components/AuthProvider';
 import { ManualOrder } from '../types';
 import { ManualOrderApiService, CreateManualOrderData } from '../services/manualOrderApiService';
 

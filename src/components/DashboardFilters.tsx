@@ -62,18 +62,18 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
   };
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardContent className="pt-6">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">Filters:</span>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <label className="text-sm text-muted-foreground">Business Unit:</label>
-            <Select 
-              value={filters.businessUnit === 'all' ? 'All' : filters.businessUnit} 
+            <Select
+              value={filters.businessUnit === 'all' ? 'All' : filters.businessUnit}
               onValueChange={(value) => handleFilterChange('businessUnit', value)}
             >
               <SelectTrigger className="w-40">
@@ -89,8 +89,8 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 
           <div className="flex items-center gap-2">
             <label className="text-sm text-muted-foreground">Customer:</label>
-            <Select 
-              value={filters.customerName === 'all' ? 'All' : filters.customerName} 
+            <Select
+              value={filters.customerName === 'all' ? 'All' : filters.customerName}
               onValueChange={(value) => handleFilterChange('customerName', value)}
             >
               <SelectTrigger className="w-48">
@@ -106,8 +106,8 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 
           <div className="flex items-center gap-2">
             <label className="text-sm text-muted-foreground">Salesperson:</label>
-            <Select 
-              value={filters.salesperson === 'all' ? 'All' : filters.salesperson} 
+            <Select
+              value={filters.salesperson === 'all' ? 'All' : filters.salesperson}
               onValueChange={(value) => handleFilterChange('salesperson', value)}
             >
               <SelectTrigger className="w-40">

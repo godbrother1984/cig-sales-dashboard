@@ -108,7 +108,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'editor' | 'tester';
+  role: 'admin' | 'sales' | 'editor' | 'tester' | 'viewer';
   organization_id?: string;
   last_login?: string;
   created_at: string;

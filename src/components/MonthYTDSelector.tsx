@@ -10,6 +10,8 @@ interface MonthYTDSelectorProps {
   onViewModeChange: (mode: string) => void;
   onMonthChange: (month: number) => void;
   salesData?: any;
+  refreshTrigger?: number;
+  setRefreshTrigger?: (value: React.SetStateAction<number>) => void;
 }
 
 const months = [
@@ -29,7 +31,9 @@ export const MonthYTDSelector: React.FC<MonthYTDSelectorProps> = ({
   selectedMonth,
   onViewModeChange,
   onMonthChange,
-  salesData
+  salesData,
+  refreshTrigger,
+  setRefreshTrigger
 }) => {
   // Get manual orders from localStorage
   const getManualOrders = () => {
@@ -56,63 +60,98 @@ export const MonthYTDSelector: React.FC<MonthYTDSelectorProps> = ({
   };
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardContent className="pt-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h2 className="text-2xl font-bold text-foreground">
-              {getDisplayTitle()}
-            </h2>
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Period:</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-muted-foreground">View:</label>
+            <Select value={viewMode} onValueChange={onViewModeChange}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="qtd">QTD</SelectItem>
+                <SelectItem value="ytd">YTD</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {viewMode === 'monthly' && (
             <div className="flex items-center gap-2">
-              <Select value={viewMode} onValueChange={onViewModeChange}>
+              <label className="text-sm text-muted-foreground">Month:</label>
+              <Select value={selectedMonth.toString()} onValueChange={(value) => onMonthChange(parseInt(value))}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="qtd">QTD</SelectItem>
-                  <SelectItem value="ytd">YTD</SelectItem>
+                  {months.map((month, index) => (
+                    <SelectItem
+                      key={index}
+                      value={index.toString()}
+                      className={!availableMonthIndices.includes(index) ? 'text-muted-foreground' : ''}
+                    >
+                      {month}
+                      {!availableMonthIndices.includes(index) && ' (No Data)'}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              {viewMode === 'monthly' && (
-                <Select value={selectedMonth.toString()} onValueChange={(value) => onMonthChange(parseInt(value))}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {months.map((month, index) => (
-                      <SelectItem 
-                        key={index} 
-                        value={index.toString()}
-                        className={!availableMonthIndices.includes(index) ? 'text-muted-foreground' : ''}
-                      >
-                        {month}
-                        {!availableMonthIndices.includes(index) && ' (No Data)'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              {viewMode === 'qtd' && (
-                <Select value={selectedMonth.toString()} onValueChange={(value) => onMonthChange(parseInt(value))}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {months.map((month, index) => (
-                      <SelectItem 
-                        key={index} 
-                        value={index.toString()}
-                        className={!availableMonthIndices.includes(index) ? 'text-muted-foreground' : ''}
-                      >
-                        {month}
-                        {!availableMonthIndices.includes(index) && ' (No Data)'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
             </div>
+          )}
+
+          {viewMode === 'qtd' && (
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-muted-foreground">Quarter End:</label>
+              <Select value={selectedMonth.toString()} onValueChange={(value) => onMonthChange(parseInt(value))}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {months.map((month, index) => (
+                    <SelectItem
+                      key={index}
+                      value={index.toString()}
+                      className={!availableMonthIndices.includes(index) ? 'text-muted-foreground' : ''}
+                    >
+                      {month}
+                      {!availableMonthIndices.includes(index) && ' (No Data)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-muted-foreground">Year:</label>
+            <Select
+              value={localStorage.getItem('selected_year') || new Date().getFullYear().toString()}
+              onValueChange={(value) => {
+                localStorage.setItem('selected_year', value);
+                if (setRefreshTrigger) {
+                  setRefreshTrigger(prev => prev + 1);
+                }
+              }}
+            >
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 11 }, (_, i) => {
+                  const year = new Date().getFullYear() - 5 + i;
+                  return (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year + 543}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </CardContent>

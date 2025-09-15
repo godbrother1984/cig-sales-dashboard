@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { combineDataWithManualOrders } from '../utils/dataCombination';
 import { ManualOrder, DashboardFilters, Targets } from '../types';
-import { DynamicsApiService } from '../services/dynamicsApiService';
-import { ApiConfigService } from '../services/apiConfigService';
+import { DynamicsApiService, SalesDataParams } from '../services/dynamicsApiService';
 import { transformApiDataToExpectedFormat, getEmptyDataStructure } from '../utils/apiDataTransformer';
 import { toast } from '@/hooks/use-toast';
 
@@ -10,7 +9,8 @@ export const useSalesData = (
   filters: DashboardFilters,
   selectedMonth: number,
   viewMode: string,
-  targets: Targets
+  targets: Targets,
+  refreshTrigger?: number
 ) => {
   const [salesData, setSalesData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,22 +27,73 @@ export const useSalesData = (
   };
 
   const fetchDataFromApi = async () => {
-    const config = ApiConfigService.getConfig();
-    
-    if (!config.isEnabled) {
-      console.log('API is disabled, using empty data structure');
+    // Get API endpoints from localStorage (from Settings page)
+    const savedEndpoints = localStorage.getItem('api_endpoints');
+    let dynamicsEndpoint = null;
+
+    if (savedEndpoints) {
+      try {
+        const endpoints = JSON.parse(savedEndpoints);
+        dynamicsEndpoint = endpoints.find((ep: any) => ep.id === 'dynamics_api');
+      } catch (error) {
+        console.error('Error parsing API endpoints:', error);
+      }
+    }
+
+    // Check if Dynamics API is enabled and has baseUrl
+    if (!dynamicsEndpoint || !dynamicsEndpoint.isActive || !dynamicsEndpoint.baseUrl) {
+      console.log('Dynamics API is disabled or not configured, using empty data structure');
       return getEmptyDataStructure();
     }
 
     try {
       const apiService = new DynamicsApiService({
-        baseUrl: config.baseUrl,
-        apiKey: config.apiKey
+        baseUrl: dynamicsEndpoint.baseUrl,
+        apiKey: dynamicsEndpoint.apiKey || ''
       });
 
-      const apiResponse = await apiService.fetchSalesData();
+      // Build API parameters from current filters and selected month
+      const selectedYear = parseInt(localStorage.getItem('selected_year') || new Date().getFullYear().toString());
+      const companiesText = localStorage.getItem('companies_text') || 'CIG Group';
+      const companiesList = companiesText.split(',').map(c => c.trim()).filter(c => c);
+
+      console.log('Companies to fetch:', companiesList);
+
+      // Fetch data for all companies and combine
+      const allApiResponses = await Promise.allSettled(
+        companiesList.map(async (company) => {
+          const apiParams: SalesDataParams = {
+            year: selectedYear,
+            month: selectedMonth === 12 ? undefined : selectedMonth + 1, // Convert to 1-based month, 12 = all months
+            businessUnit: filters.businessUnit !== 'all' ? filters.businessUnit : undefined,
+            company: company
+          };
+
+          console.log('API parameters for', company, ':', apiParams);
+          return await apiService.fetchSalesData(apiParams);
+        })
+      );
+
+      // Combine successful responses
+      const successfulResponses = allApiResponses
+        .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
+        .map(result => result.value);
+
+      // Merge all API responses into a single dataset
+      const combinedApiResponse = successfulResponses.reduce((acc, response) => {
+        // Simple merge - you may need to customize this based on your API response structure
+        if (!acc) return response;
+
+        // Combine arrays if they exist
+        if (response.data && Array.isArray(response.data)) {
+          acc.data = [...(acc.data || []), ...response.data];
+        }
+
+        return acc;
+      }, null);
+
       // Pass the business unit filter to the transformer
-      const transformedData = transformApiDataToExpectedFormat(apiResponse, filters.businessUnit);
+      const transformedData = transformApiDataToExpectedFormat(combinedApiResponse || {}, filters.businessUnit);
       
       console.log('Successfully fetched and transformed API data with business unit filter:', filters.businessUnit);
       
@@ -135,7 +186,7 @@ export const useSalesData = (
     fetchSalesData();
     const interval = setInterval(fetchSalesData, 300000);
     return () => clearInterval(interval);
-  }, [filters, targets, selectedMonth, viewMode]);
+  }, [filters, targets, selectedMonth, viewMode, refreshTrigger]);
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
